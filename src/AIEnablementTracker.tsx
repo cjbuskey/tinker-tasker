@@ -399,7 +399,7 @@ export default function AIEnablementTracker() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 text-slate-900 p-4 md:p-8 font-sans">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 animate-fade-in">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start mb-4">
             <div className="flex-1">
               <h1 className="text-3xl md:text-4xl font-bold text-indigo-900 flex items-center gap-3 mb-1">
                 <div className="p-2 bg-indigo-100 rounded-lg">
@@ -411,7 +411,7 @@ export default function AIEnablementTracker() {
                 Building an Interoperable Multi-Agent Customer Intelligence System
               </p>
             </div>
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-col gap-3 w-full md:w-auto md:items-end">
               {/* Cloud Sync Status */}
               <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full ${
                 cloudSyncEnabled 
@@ -506,7 +506,7 @@ export default function AIEnablementTracker() {
                 <div className="p-6 space-y-8 border-t border-slate-100 bg-gradient-to-b from-white to-slate-50/30">
                   {phase.weeks.map((week) => (
                     <div key={week.id} className="relative pl-5 border-l-3 border-indigo-300 hover:border-indigo-500 transition-colors duration-200">
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-indigo-700 flex items-center gap-2 mb-2">
                             <span className="flex items-center gap-2">
@@ -522,7 +522,7 @@ export default function AIEnablementTracker() {
                           <p className="text-sm text-slate-600 leading-relaxed">{week.goal}</p>
                         </div>
                         {week.resources && (
-                          <div className="flex gap-2 ml-4">
+                          <div className="flex flex-wrap gap-2 ml-0 md:ml-4">
                             {week.resources.map((res, idx) => (
                               <a 
                                 key={idx} 
@@ -607,7 +607,7 @@ export default function AIEnablementTracker() {
                               <>
                                 <div 
                                   className={`
-                                    group flex items-center gap-3 p-3.5 rounded-lg border transition-all duration-200 transform
+                                    group flex flex-wrap items-center gap-3 p-3.5 rounded-lg border transition-all duration-200 transform
                                     ${completedTasks.has(task.id) 
                                       ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 opacity-70 hover:opacity-100' 
                                       : 'bg-white border-slate-200 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5 hover:bg-indigo-50/30'}
@@ -626,13 +626,13 @@ export default function AIEnablementTracker() {
                                   </div>
                                   <div 
                                     onClick={() => toggleTask(task.id)}
-                                    className="flex-grow cursor-pointer"
+                                    className="flex-grow min-w-[180px] cursor-pointer"
                                   >
                                     <span className={`text-sm font-medium transition-all ${completedTasks.has(task.id) ? 'line-through text-slate-500' : 'text-slate-700 group-hover:text-indigo-900'}`}>
                                       {task.text}
                                     </span>
                                   </div>
-                                  <div className={`text-xs font-mono px-2.5 py-1 rounded-md whitespace-nowrap transition-colors ${completedTasks.has(task.id) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700'}`}>
+                                  <div className={`text-xs font-mono px-2.5 py-1 rounded-md whitespace-nowrap transition-colors flex-shrink-0 ${completedTasks.has(task.id) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700'}`}>
                                     {task.time}
                                   </div>
                                   <button
@@ -640,7 +640,7 @@ export default function AIEnablementTracker() {
                                       e.stopPropagation();
                                       handleSearch(task.id, task.text);
                                     }}
-                                    className={`p-1.5 rounded-md transition-colors ${
+                                    className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${
                                       expandedSearches.has(task.id)
                                         ? 'bg-purple-100 text-purple-600'
                                         : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'
@@ -659,7 +659,7 @@ export default function AIEnablementTracker() {
                                         e.stopPropagation();
                                         toggleSubtasks(task.id);
                                       }}
-                                      className="text-slate-400 hover:text-indigo-600 transition-colors"
+                                      className="text-slate-400 hover:text-indigo-600 transition-colors flex-shrink-0"
                                     >
                                       {expandedTasks.has(task.id) ? (
                                         <ChevronDown className="w-4 h-4" />
