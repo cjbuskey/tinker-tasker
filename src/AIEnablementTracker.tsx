@@ -205,15 +205,23 @@ export default function AIEnablementTracker() {
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
+          // Data exists in cloud - load it
           const data = docSnap.data();
           setCurriculum(data.phases as Phase[]);
           setCloudSyncEnabled(true);
+          console.log('✅ Loaded curriculum from cloud');
         } else {
-          // Fallback to local JSON
-          throw new Error('No cloud data found');
+          // Database is empty but connection works - load from local JSON
+          // Keep cloud sync enabled so user can upload
+          console.log('📤 Cloud connected but empty. Load local data and enable upload.');
+          setCloudSyncEnabled(true);
+          const res = await fetch('/curriculum.json');
+          const data: Phase[] = await res.json();
+          setCurriculum(data);
         }
       } catch (err) {
-        console.log('Loading from local JSON (cloud sync disabled):', err);
+        // Connection failed - disable cloud sync
+        console.log('❌ Cloud sync disabled (connection failed):', err);
         setCloudSyncEnabled(false);
         // Fallback to local JSON file
         fetch('/curriculum.json')
