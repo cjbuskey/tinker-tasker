@@ -1,0 +1,427 @@
+[
+  {
+    "id": "phase1",
+    "title": "PHASE 1: FOUNDATION",
+    "weeks": [
+      {
+        "id": 1,
+        "title": "Week 1: MCP Server Basics",
+        "goal": "Build your first MCP server that exposes Salesforce data",
+        "resources": [
+          { "name": "Anthropic MCP Docs", "url": "https://modelcontextprotocol.io" },
+          { "name": "MCP Python SDK", "url": "https://github.com/modelcontextprotocol/python-sdk" }
+        ],
+        "tasks": [
+          {
+            "id": "w1t1",
+            "text": "Set up MCP dev environment (Python SDK, Docs)",
+            "time": "1 hr",
+            "subtasks": [
+              "Install MCP SDK for Python",
+              "Review Anthropic's MCP documentation"
+            ]
+          },
+          {
+            "id": "w1t2",
+            "text": "Build simple MCP server (2-3 tools)",
+            "time": "3 hrs",
+            "subtasks": [
+              "Create a server that exposes 2-3 tools (e.g., get_customer_info, search_opportunities)",
+              "Test with Claude Desktop integration"
+            ]
+          },
+          {
+            "id": "w1t3",
+            "text": "Deploy to local Docker container",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Week 2: RAG Implementation",
+        "goal": "Add vector search capabilities to your MCP server",
+        "tasks": [
+          {
+            "id": "w2t1",
+            "text": "Set up vector database (ChromaDB/Pinecone)",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "Install ChromaDB or Pinecone",
+              "Create embeddings for sample customer documents"
+            ]
+          },
+          {
+            "id": "w2t2",
+            "text": "Implement RAG pattern (semantic_search tool)",
+            "time": "2.5 hrs",
+            "subtasks": [
+              "Add semantic_search tool to your MCP server",
+              "Implement retrieval + generation workflow",
+              "Test with various query types"
+            ]
+          },
+          {
+            "id": "w2t3",
+            "text": "Document token usage patterns",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Week 3: Memory & Context Management",
+        "goal": "Add persistent memory to your agent",
+        "tasks": [
+          {
+            "id": "w3t1",
+            "text": "Implement conversation memory (SQLite/PG)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Add SQLite/PostgreSQL for conversation history",
+              "Create remember_context and recall_context tools"
+            ]
+          },
+          {
+            "id": "w3t2",
+            "text": "Build context summarization (Rolling window)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Implement rolling context window",
+              "Add automatic summarization for long conversations"
+            ]
+          },
+          {
+            "id": "w3t3",
+            "text": "Token optimization experiments",
+            "time": "1 hr",
+            "subtasks": [
+              "Compare different context compression techniques",
+              "Measure token usage across strategies"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "phase2",
+    "title": "PHASE 2: MULTI-AGENT ARCHITECTURE",
+    "weeks": [
+      {
+        "id": 4,
+        "title": "Week 4: Agent-to-Agent Protocol (A2A)",
+        "goal": "Create multiple specialized agents that can communicate",
+        "resources": [
+          { "name": "A2A Protocol Spec", "url": "https://a2a.ai" }
+        ],
+        "tasks": [
+          {
+            "id": "w4t1",
+            "text": "Design agent architecture (Researcher, Analyzer, Recommender)",
+            "time": "1 hr",
+            "subtasks": [
+              "Plan 3 agents: Researcher, Analyzer, Recommender",
+              "Map communication flows"
+            ]
+          },
+          {
+            "id": "w4t2",
+            "text": "Implement A2A protocol & message passing",
+            "time": "3 hrs",
+            "subtasks": [
+              "Set up agent discovery mechanism",
+              "Create message passing infrastructure",
+              "Build simple handoff between 2 agents"
+            ]
+          },
+          {
+            "id": "w4t3",
+            "text": "Test inter-agent communication",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Week 5: Building Specialized Agents",
+        "goal": "Create three distinct agents with clear responsibilities",
+        "tasks": [
+          {
+            "id": "w5t1",
+            "text": "Build Researcher Agent (MCP connection)",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "Connects to your MCP server for data retrieval",
+              "Specializes in gathering customer information"
+            ]
+          },
+          {
+            "id": "w5t2",
+            "text": "Build Analyzer Agent (Sentiment/Pattern)",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "Processes data from Researcher",
+              "Performs sentiment analysis and pattern detection"
+            ]
+          },
+          {
+            "id": "w5t3",
+            "text": "Build Recommender Agent (Actionable output)",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "Takes Analyzer output",
+              "Generates actionable recommendations"
+            ]
+          },
+          {
+            "id": "w5t4",
+            "text": "Wire all three together",
+            "time": "0.5 hrs",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Week 6: Agent Orchestration",
+        "goal": "Add intelligent routing and parallel execution",
+        "tasks": [
+          {
+            "id": "w6t1",
+            "text": "Implement orchestration layer (Router)",
+            "time": "2.5 hrs",
+            "subtasks": [
+              "Build router that selects appropriate agent(s)",
+              "Add parallel execution for independent tasks",
+              "Handle agent failures and retries"
+            ]
+          },
+          {
+            "id": "w6t2",
+            "text": "Add monitoring and logging (Latency/Tokens)",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "Track agent interactions",
+              "Measure latency and token usage per agent"
+            ]
+          },
+          {
+            "id": "w6t3",
+            "text": "Test complex multi-step workflows",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "phase3",
+    "title": "PHASE 3: ADVANCED CAPABILITIES",
+    "weeks": [
+      {
+        "id": 7,
+        "title": "Week 7: Continuous Learning System",
+        "goal": "Enable agents to learn from interactions",
+        "tasks": [
+          {
+            "id": "w7t1",
+            "text": "Implement feedback loop (User feedback)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Add user feedback collection",
+              "Store successful/unsuccessful interaction patterns"
+            ]
+          },
+          {
+            "id": "w7t2",
+            "text": "Build learning mechanism (Dynamic prompts)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Create few-shot example bank",
+              "Implement dynamic prompt enhancement based on feedback"
+            ]
+          },
+          {
+            "id": "w7t3",
+            "text": "A/B test learning improvements",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Week 8: Advanced Token Optimization",
+        "goal": "Minimize costs while maintaining quality",
+        "tasks": [
+          {
+            "id": "w8t1",
+            "text": "Implement smart caching (Embeddings)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Cache embeddings and common queries",
+              "Add semantic caching for similar questions"
+            ]
+          },
+          {
+            "id": "w8t2",
+            "text": "Optimize agent prompts (Compression)",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "Compress system prompts",
+              "Use chain-of-thought selectively"
+            ]
+          },
+          {
+            "id": "w8t3",
+            "text": "Implement streaming and partial responses",
+            "time": "1.5 hrs",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Week 9: Cross-Platform Integration",
+        "goal": "Connect to other AI platforms (Copilot, Gemini)",
+        "tasks": [
+          {
+            "id": "w9t1",
+            "text": "Research platform-specific protocols",
+            "time": "1 hr",
+            "subtasks": [
+              "Study Microsoft Copilot extensibility",
+              "Review Google Gemini API patterns"
+            ]
+          },
+          {
+            "id": "w9t2",
+            "text": "Build adapter layer (MCP-to-Copilot)",
+            "time": "3 hrs",
+            "subtasks": [
+              "Create abstraction for different platforms",
+              "Implement MCP-to-Copilot bridge"
+            ]
+          },
+          {
+            "id": "w9t3",
+            "text": "Test cross-platform handoffs",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "phase4",
+    "title": "PHASE 4: POLISH & PRODUCTION",
+    "weeks": [
+      {
+        "id": 10,
+        "title": "Week 10: Security & Governance",
+        "goal": "Add enterprise-grade security controls",
+        "tasks": [
+          {
+            "id": "w10t1",
+            "text": "Implement Auth/RBAC",
+            "time": "2 hrs",
+            "subtasks": [
+              "Add API key management",
+              "Implement role-based access control"
+            ]
+          },
+          {
+            "id": "w10t2",
+            "text": "Add audit logging & compliance reports",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "Log all agent interactions",
+              "Create compliance reports"
+            ]
+          },
+          {
+            "id": "w10t3",
+            "text": "Data privacy controls (PII masking)",
+            "time": "1.5 hrs",
+            "subtasks": [
+              "PII detection and masking",
+              "Data retention policies"
+            ]
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Week 11: Demo Environment",
+        "goal": "Create customer-facing demo and documentation",
+        "tasks": [
+          {
+            "id": "w11t1",
+            "text": "Build demo UI (Streamlit/Gradio)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Simple Streamlit or Gradio interface",
+              "Show agent interactions in real-time"
+            ]
+          },
+          {
+            "id": "w11t2",
+            "text": "Create technical documentation",
+            "time": "2 hrs",
+            "subtasks": [
+              "Architecture diagrams",
+              "API documentation",
+              "Deployment guide"
+            ]
+          },
+          {
+            "id": "w11t3",
+            "text": "Record demo walkthrough",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Week 12: Advanced Scenarios",
+        "goal": "Handle edge cases and optimize for scale",
+        "tasks": [
+          {
+            "id": "w12t1",
+            "text": "Implement advanced scenarios (Multi-turn)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Multi-turn conversations with context switching",
+              "Handling ambiguous requests",
+              "Agent collaboration on complex tasks"
+            ]
+          },
+          {
+            "id": "w12t2",
+            "text": "Performance optimization (Load testing)",
+            "time": "2 hrs",
+            "subtasks": [
+              "Load testing",
+              "Identify and fix bottlenecks",
+              "Optimize for concurrent users"
+            ]
+          },
+          {
+            "id": "w12t3",
+            "text": "Create reusable templates",
+            "time": "1 hr",
+            "subtasks": []
+          }
+        ]
+      }
+    ]
+  }
+]
+
