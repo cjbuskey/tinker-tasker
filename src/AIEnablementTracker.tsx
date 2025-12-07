@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, ChevronDown, ChevronRight, BookOpen, ExternalLink, Trophy, Code, Edit2, Save, Plus, Trash2, X, Cloud, CloudOff } from 'lucide-react';
+import { CheckCircle, Circle, ChevronDown, ChevronRight, BookOpen, ExternalLink, Trophy, Code, Edit2, Save, Plus, Trash2, X, Cloud, CloudOff, Search, Loader2 } from 'lucide-react';
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { searchWithPerplexity, PerplexitySearchResult } from './perplexity';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 type Task = {
   id: string;
@@ -29,175 +32,28 @@ type Phase = {
   weeks: Week[];
 };
 
-// Placeholder for initial load - will be replaced by JSON data
-const defaultCurriculum: Phase[] = [
-  {
-    id: 'phase1',
-    title: 'PHASE 1: FOUNDATION',
-    weeks: [
-      {
-        id: 1,
-        title: 'Week 1: MCP Server Basics',
-        goal: 'Build your first MCP server that exposes Salesforce data',
-        resources: [
-          { name: 'Anthropic MCP Docs', url: 'https://modelcontextprotocol.io' },
-          { name: 'MCP Python SDK', url: 'https://github.com/modelcontextprotocol/python-sdk' }
-        ],
-        tasks: [
-          { id: 'w1t1', text: 'Set up MCP dev environment (Python SDK, Docs)', time: '1 hr' },
-          { id: 'w1t2', text: 'Build simple MCP server (2-3 tools)', time: '3 hrs' },
-          { id: 'w1t3', text: 'Deploy to local Docker container', time: '1 hr' }
-        ]
-      },
-      {
-        id: 2,
-        title: 'Week 2: RAG Implementation',
-        goal: 'Add vector search capabilities to your MCP server',
-        tasks: [
-          { id: 'w2t1', text: 'Set up vector database (ChromaDB/Pinecone)', time: '1.5 hrs' },
-          { id: 'w2t2', text: 'Implement RAG pattern (semantic_search tool)', time: '2.5 hrs' },
-          { id: 'w2t3', text: 'Document token usage patterns', time: '1 hr' }
-        ]
-      },
-      {
-        id: 3,
-        title: 'Week 3: Memory & Context Management',
-        goal: 'Add persistent memory to your agent',
-        tasks: [
-          { id: 'w3t1', text: 'Implement conversation memory (SQLite/PG)', time: '2 hrs' },
-          { id: 'w3t2', text: 'Build context summarization (Rolling window)', time: '2 hrs' },
-          { id: 'w3t3', text: 'Token optimization experiments', time: '1 hr' }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'phase2',
-    title: 'PHASE 2: MULTI-AGENT ARCHITECTURE',
-    weeks: [
-      {
-        id: 4,
-        title: 'Week 4: Agent-to-Agent Protocol (A2A)',
-        goal: 'Create multiple specialized agents that can communicate',
-        resources: [
-          { name: 'A2A Protocol Spec', url: 'https://a2a.ai' }
-        ],
-        tasks: [
-          { id: 'w4t1', text: 'Design agent architecture (Researcher, Analyzer, Recommender)', time: '1 hr' },
-          { id: 'w4t2', text: 'Implement A2A protocol & message passing', time: '3 hrs' },
-          { id: 'w4t3', text: 'Test inter-agent communication', time: '1 hr' }
-        ]
-      },
-      {
-        id: 5,
-        title: 'Week 5: Building Specialized Agents',
-        goal: 'Create three distinct agents with clear responsibilities',
-        tasks: [
-          { id: 'w5t1', text: 'Build Researcher Agent (MCP connection)', time: '1.5 hrs' },
-          { id: 'w5t2', text: 'Build Analyzer Agent (Sentiment/Pattern)', time: '1.5 hrs' },
-          { id: 'w5t3', text: 'Build Recommender Agent (Actionable output)', time: '1.5 hrs' },
-          { id: 'w5t4', text: 'Wire all three together', time: '0.5 hrs' }
-        ]
-      },
-      {
-        id: 6,
-        title: 'Week 6: Agent Orchestration',
-        goal: 'Add intelligent routing and parallel execution',
-        tasks: [
-          { id: 'w6t1', text: 'Implement orchestration layer (Router)', time: '2.5 hrs' },
-          { id: 'w6t2', text: 'Add monitoring and logging (Latency/Tokens)', time: '1.5 hrs' },
-          { id: 'w6t3', text: 'Test complex multi-step workflows', time: '1 hr' }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'phase3',
-    title: 'PHASE 3: ADVANCED CAPABILITIES',
-    weeks: [
-      {
-        id: 7,
-        title: 'Week 7: Continuous Learning System',
-        goal: 'Enable agents to learn from interactions',
-        tasks: [
-          { id: 'w7t1', text: 'Implement feedback loop (User feedback)', time: '2 hrs' },
-          { id: 'w7t2', text: 'Build learning mechanism (Dynamic prompts)', time: '2 hrs' },
-          { id: 'w7t3', text: 'A/B test learning improvements', time: '1 hr' }
-        ]
-      },
-      {
-        id: 8,
-        title: 'Week 8: Advanced Token Optimization',
-        goal: 'Minimize costs while maintaining quality',
-        tasks: [
-          { id: 'w8t1', text: 'Implement smart caching (Embeddings)', time: '2 hrs' },
-          { id: 'w8t2', text: 'Optimize agent prompts (Compression)', time: '1.5 hrs' },
-          { id: 'w8t3', text: 'Implement streaming and partial responses', time: '1.5 hrs' }
-        ]
-      },
-      {
-        id: 9,
-        title: 'Week 9: Cross-Platform Integration',
-        goal: 'Connect to other AI platforms (Copilot, Gemini)',
-        tasks: [
-          { id: 'w9t1', text: 'Research platform-specific protocols', time: '1 hr' },
-          { id: 'w9t2', text: 'Build adapter layer (MCP-to-Copilot)', time: '3 hrs' },
-          { id: 'w9t3', text: 'Test cross-platform handoffs', time: '1 hr' }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'phase4',
-    title: 'PHASE 4: POLISH & PRODUCTION',
-    weeks: [
-      {
-        id: 10,
-        title: 'Week 10: Security & Governance',
-        goal: 'Add enterprise-grade security controls',
-        tasks: [
-          { id: 'w10t1', text: 'Implement Auth/RBAC', time: '2 hrs' },
-          { id: 'w10t2', text: 'Add audit logging & compliance reports', time: '1.5 hrs' },
-          { id: 'w10t3', text: 'Data privacy controls (PII masking)', time: '1.5 hrs' }
-        ]
-      },
-      {
-        id: 11,
-        title: 'Week 11: Demo Environment',
-        goal: 'Create customer-facing demo and documentation',
-        tasks: [
-          { id: 'w11t1', text: 'Build demo UI (Streamlit/Gradio)', time: '2 hrs' },
-          { id: 'w11t2', text: 'Create technical documentation', time: '2 hrs' },
-          { id: 'w11t3', text: 'Record demo walkthrough', time: '1 hr' }
-        ]
-      },
-      {
-        id: 12,
-        title: 'Week 12: Advanced Scenarios',
-        goal: 'Handle edge cases and optimize for scale',
-        tasks: [
-          { id: 'w12t1', text: 'Implement advanced scenarios (Multi-turn)', time: '2 hrs' },
-          { id: 'w12t2', text: 'Performance optimization (Load testing)', time: '2 hrs' },
-          { id: 'w12t3', text: 'Create reusable templates', time: '1 hr' }
-        ]
-      }
-    ]
-  }
-];
-
 // --- MAIN COMPONENT ---
 export default function AIEnablementTracker() {
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
   const [expandedPhase, setExpandedPhase] = useState<string | null>('phase1'); // Default open Phase 1
-  const [curriculum, setCurriculum] = useState<Phase[]>(defaultCurriculum);
+  const [curriculum, setCurriculum] = useState<Phase[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [cloudSyncEnabled, setCloudSyncEnabled] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  
+  // Perplexity search state
+  const [searchResults, setSearchResults] = useState<Map<string, PerplexitySearchResult>>(new Map());
+  const [searchingTasks, setSearchingTasks] = useState<Set<string>>(new Set());
+  const [expandedSearches, setExpandedSearches] = useState<Set<string>>(new Set());
 
   // Load curriculum from Firestore (with fallback to JSON)
   useEffect(() => {
     const loadCurriculum = async () => {
+      setIsLoading(true);
+      setLoadError(null);
       try {
         setIsSyncing(true);
         // Try to load from Firestore first
@@ -215,25 +71,33 @@ export default function AIEnablementTracker() {
           // Keep cloud sync enabled so user can upload
           console.log('📤 Cloud connected but empty. Load local data and enable upload.');
           setCloudSyncEnabled(true);
-          const res = await fetch('/curriculum.json');
-          const data: Phase[] = await res.json();
-          setCurriculum(data);
+          try {
+            const res = await fetch('/curriculum.json');
+            const data: Phase[] = await res.json();
+            setCurriculum(data);
+          } catch (jsonErr) {
+            console.error('Failed to load curriculum from JSON:', jsonErr);
+            setLoadError('Failed to load local curriculum data. Please retry.');
+            setCurriculum([]);
+          }
         }
       } catch (err) {
         // Connection failed - disable cloud sync
         console.log('❌ Cloud sync disabled (connection failed):', err);
         setCloudSyncEnabled(false);
         // Fallback to local JSON file
-        fetch('/curriculum.json')
-          .then(res => res.json())
-          .then((data: Phase[]) => {
-            setCurriculum(data);
-          })
-          .catch(jsonErr => {
-            console.error('Failed to load curriculum from JSON:', jsonErr);
-          });
+        try {
+          const res = await fetch('/curriculum.json');
+          const data: Phase[] = await res.json();
+          setCurriculum(data);
+        } catch (jsonErr) {
+          console.error('Failed to load curriculum from JSON:', jsonErr);
+          setLoadError('Unable to load curriculum. Check your connection and retry.');
+          setCurriculum([]);
+        }
       } finally {
         setIsSyncing(false);
+        setIsLoading(false);
       }
     };
 
@@ -426,6 +290,47 @@ export default function AIEnablementTracker() {
     }));
   };
 
+  // Handle Perplexity search
+  const handleSearch = async (searchKey: string, query: string) => {
+    // Toggle: if already expanded, collapse it
+    if (expandedSearches.has(searchKey)) {
+      setExpandedSearches(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(searchKey);
+        return newSet;
+      });
+      return;
+    }
+
+    // If we already have results, just expand them
+    if (searchResults.has(searchKey)) {
+      setExpandedSearches(prev => new Set(prev).add(searchKey));
+      return;
+    }
+
+    // Otherwise, perform a new search
+    setSearchingTasks(prev => new Set(prev).add(searchKey));
+    setExpandedSearches(prev => new Set(prev).add(searchKey));
+
+    try {
+      const result = await searchWithPerplexity(query);
+      setSearchResults(prev => new Map(prev).set(searchKey, result));
+    } catch (error) {
+      console.error('Search failed:', error);
+      const errorResult: PerplexitySearchResult = {
+        content: error instanceof Error ? error.message : 'Search failed. Please check your API key configuration.',
+        citations: []
+      };
+      setSearchResults(prev => new Map(prev).set(searchKey, errorResult));
+    } finally {
+      setSearchingTasks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(searchKey);
+        return newSet;
+      });
+    }
+  };
+
   const saveCurriculum = async () => {
     try {
       setIsSyncing(true);
@@ -469,12 +374,26 @@ export default function AIEnablementTracker() {
     const totalTasks = curriculum.reduce((acc, phase) => 
       acc + phase.weeks.reduce((wAcc, week) => wAcc + week.tasks.length, 0), 0
     );
+    if (totalTasks === 0) return 0;
     return Math.round((completedTasks.size / totalTasks) * 100);
   };
 
   const isWeekComplete = (week: Week) => {
     return week.tasks.every((t) => completedTasks.has(t.id));
   };
+
+  const LoadingState = () => (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 text-slate-900 p-4 md:p-8 font-sans flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="w-10 h-10 border-4 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
+        <div className="text-sm text-slate-600">Loading your curriculum...</div>
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingState />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 text-slate-900 p-4 md:p-8 font-sans">
@@ -539,7 +458,7 @@ export default function AIEnablementTracker() {
                   {editMode ? (
                     <>
                       <Save className="w-4 h-4" />
-                      {cloudSyncEnabled ? 'Save to Cloud' : 'Save & Download'}
+                      Save
                     </>
                   ) : (
                     <>
@@ -557,6 +476,11 @@ export default function AIEnablementTracker() {
               </div>
             </div>
           </div>
+          {loadError && (
+            <div className="mt-4 p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+              {loadError}
+            </div>
+          )}
           <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
             <div 
               className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 h-3 transition-all duration-500 ease-out shadow-lg"
@@ -564,23 +488,6 @@ export default function AIEnablementTracker() {
             ></div>
           </div>
         </header>
-
-        {/* Edit Mode Notice */}
-        {editMode && (
-          <div className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg animate-fade-in">
-            <div className="flex items-start gap-3">
-              <Edit2 className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-amber-900 mb-1">Edit Mode Active</h3>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  Click on any task field to edit. Add subtasks, modify descriptions, or delete tasks. 
-                  Click <strong>"Save & Download"</strong> when done—your changes will download as <code className="bg-amber-100 px-1 rounded">curriculum.json</code>. 
-                  Replace the file in <code className="bg-amber-100 px-1 rounded">public/curriculum.json</code> to make changes permanent.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="space-y-6">
           {curriculum.map((phase) => (
@@ -700,7 +607,7 @@ export default function AIEnablementTracker() {
                               <>
                                 <div 
                                   className={`
-                                    group flex items-center gap-3 p-3.5 rounded-lg border cursor-pointer transition-all duration-200 transform
+                                    group flex items-center gap-3 p-3.5 rounded-lg border transition-all duration-200 transform
                                     ${completedTasks.has(task.id) 
                                       ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 opacity-70 hover:opacity-100' 
                                       : 'bg-white border-slate-200 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5 hover:bg-indigo-50/30'}
@@ -709,7 +616,7 @@ export default function AIEnablementTracker() {
                                   <div 
                                     onClick={() => toggleTask(task.id)}
                                     className={`
-                                      w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full transition-all duration-200
+                                      w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer
                                       ${completedTasks.has(task.id) 
                                         ? 'text-green-600 scale-110' 
                                         : 'text-slate-300 group-hover:text-indigo-400 group-hover:scale-110'}
@@ -719,7 +626,7 @@ export default function AIEnablementTracker() {
                                   </div>
                                   <div 
                                     onClick={() => toggleTask(task.id)}
-                                    className="flex-grow"
+                                    className="flex-grow cursor-pointer"
                                   >
                                     <span className={`text-sm font-medium transition-all ${completedTasks.has(task.id) ? 'line-through text-slate-500' : 'text-slate-700 group-hover:text-indigo-900'}`}>
                                       {task.text}
@@ -728,6 +635,24 @@ export default function AIEnablementTracker() {
                                   <div className={`text-xs font-mono px-2.5 py-1 rounded-md whitespace-nowrap transition-colors ${completedTasks.has(task.id) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700'}`}>
                                     {task.time}
                                   </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSearch(task.id, task.text);
+                                    }}
+                                    className={`p-1.5 rounded-md transition-colors ${
+                                      expandedSearches.has(task.id)
+                                        ? 'bg-purple-100 text-purple-600'
+                                        : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'
+                                    }`}
+                                    title="Search with Perplexity"
+                                  >
+                                    {searchingTasks.has(task.id) ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Search className="w-4 h-4" />
+                                    )}
+                                  </button>
                                   {task.subtasks && task.subtasks.length > 0 && (
                                     <button
                                       onClick={(e) => {
@@ -744,17 +669,130 @@ export default function AIEnablementTracker() {
                                     </button>
                                   )}
                                 </div>
+                                
+                                {/* Task Search Results */}
+                                {expandedSearches.has(task.id) && searchResults.has(task.id) && (
+                                  <div className="ml-9 mr-3 mt-2 p-4 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in">
+                                    <div className="flex items-start gap-2 mb-2">
+                                      <Search className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1">
+                                        <h4 className="text-xs font-semibold text-purple-900 mb-2">Perplexity Search Results</h4>
+                                        <div className="prose prose-sm max-w-none text-slate-700 
+                                          prose-headings:text-purple-900 prose-headings:font-semibold prose-headings:mb-2
+                                          prose-p:text-slate-700 prose-p:leading-relaxed prose-p:mb-2
+                                          prose-strong:text-slate-900 prose-strong:font-semibold
+                                          prose-code:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-[''] prose-code:after:content-[''] prose-code:font-mono
+                                          prose-pre:bg-slate-100 prose-pre:text-slate-800 prose-pre:p-3 prose-pre:rounded-md prose-pre:text-xs prose-pre:overflow-x-auto prose-pre:border prose-pre:border-slate-200
+                                          prose-ul:list-disc prose-ul:ml-4 prose-ul:mb-2 prose-ul:space-y-1
+                                          prose-ol:list-decimal prose-ol:ml-4 prose-ol:mb-2 prose-ol:space-y-1
+                                          prose-li:text-slate-700 prose-li:text-sm prose-li:leading-relaxed
+                                          prose-a:text-purple-600 prose-a:underline prose-a:hover:text-purple-800
+                                          [&_pre_code]:text-slate-800 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:font-mono">
+                                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {searchResults.get(task.id)?.content || ''}
+                                          </ReactMarkdown>
+                                        </div>
+                                        {searchResults.get(task.id)?.citations && searchResults.get(task.id)!.citations!.length > 0 && (
+                                          <div className="mt-3 pt-3 border-t border-purple-200">
+                                            <p className="text-xs font-semibold text-purple-800 mb-1">Sources:</p>
+                                            <div className="space-y-1">
+                                              {searchResults.get(task.id)!.citations!.map((citation, idx) => (
+                                                <a 
+                                                  key={idx}
+                                                  href={citation}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="block text-xs text-purple-600 hover:text-purple-800 hover:underline truncate"
+                                                >
+                                                  {citation}
+                                                </a>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 {task.subtasks && task.subtasks.length > 0 && expandedTasks.has(task.id) && (
                                   <div className="ml-12 mr-3 space-y-1.5 animate-fade-in">
-                                    {task.subtasks.map((subtask, idx) => (
-                                      <div 
-                                        key={idx}
-                                        className="flex items-start gap-2 text-sm text-slate-600 bg-slate-50 p-2.5 rounded-md border border-slate-100"
-                                      >
-                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0"></div>
-                                        <span>{subtask}</span>
-                                      </div>
-                                    ))}
+                                    {task.subtasks.map((subtask, idx) => {
+                                      const subtaskKey = `${task.id}-subtask-${idx}`;
+                                      return (
+                                        <div key={idx}>
+                                          <div 
+                                            className="flex items-start gap-2 text-sm text-slate-600 bg-slate-50 p-2.5 rounded-md border border-slate-100 group"
+                                          >
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0"></div>
+                                            <span className="flex-grow">{subtask}</span>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSearch(subtaskKey, subtask);
+                                              }}
+                                              className={`p-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+                                                expandedSearches.has(subtaskKey)
+                                                  ? 'bg-purple-100 text-purple-600 opacity-100'
+                                                  : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'
+                                              }`}
+                                              title="Search with Perplexity"
+                                            >
+                                              {searchingTasks.has(subtaskKey) ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                              ) : (
+                                                <Search className="w-3 h-3" />
+                                              )}
+                                            </button>
+                                          </div>
+                                          
+                                          {/* Subtask Search Results */}
+                                          {expandedSearches.has(subtaskKey) && searchResults.has(subtaskKey) && (
+                                            <div className="ml-4 mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in">
+                                              <div className="flex items-start gap-2">
+                                                <Search className="w-3 h-3 text-purple-600 mt-0.5 flex-shrink-0" />
+                                                <div className="flex-1">
+                                                  <h5 className="text-xs font-semibold text-purple-900 mb-1">Search Results</h5>
+                                                  <div className="prose prose-xs max-w-none text-slate-700 
+                                                    prose-headings:text-purple-900 prose-headings:font-semibold prose-headings:mb-1 prose-headings:text-xs
+                                                    prose-p:text-slate-700 prose-p:leading-relaxed prose-p:mb-1 prose-p:text-xs
+                                                    prose-strong:text-slate-900 prose-strong:font-semibold
+                                                    prose-code:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-[''] prose-code:after:content-[''] prose-code:font-mono
+                                                    prose-pre:bg-slate-100 prose-pre:text-slate-800 prose-pre:p-2 prose-pre:rounded-md prose-pre:text-xs prose-pre:overflow-x-auto prose-pre:border prose-pre:border-slate-200
+                                                    prose-ul:list-disc prose-ul:ml-3 prose-ul:mb-1 prose-ul:space-y-0.5
+                                                    prose-ol:list-decimal prose-ol:ml-3 prose-ol:mb-1 prose-ol:space-y-0.5
+                                                    prose-li:text-slate-700 prose-li:text-xs prose-li:leading-relaxed
+                                                    prose-a:text-purple-600 prose-a:underline prose-a:hover:text-purple-800
+                                                    [&_pre_code]:text-slate-800 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:font-mono">
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                      {searchResults.get(subtaskKey)?.content || ''}
+                                                    </ReactMarkdown>
+                                                  </div>
+                                                  {searchResults.get(subtaskKey)?.citations && searchResults.get(subtaskKey)!.citations!.length > 0 && (
+                                                    <div className="mt-2 pt-2 border-t border-purple-200">
+                                                      <p className="text-xs font-semibold text-purple-800 mb-1">Sources:</p>
+                                                      <div className="space-y-1">
+                                                        {searchResults.get(subtaskKey)!.citations!.map((citation, cidx) => (
+                                                          <a 
+                                                            key={cidx}
+                                                            href={citation}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="block text-xs text-purple-600 hover:text-purple-800 hover:underline truncate"
+                                                          >
+                                                            {citation}
+                                                          </a>
+                                                        ))}
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </>
