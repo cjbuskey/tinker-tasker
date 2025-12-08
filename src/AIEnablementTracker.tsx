@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, ChevronDown, ChevronRight, BookOpen, ExternalLink, Trophy, Code, Edit2, Save, Plus, Trash2, X, Cloud, CloudOff, Search, Loader2 } from 'lucide-react';
+import { CheckCircle, Circle, ChevronDown, ChevronRight, BookOpen, ExternalLink, Trophy, Code, Edit2, Save, Plus, Trash2, X, Cloud, CloudOff, Search, Loader2, MessageCircle } from 'lucide-react';
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { searchWithPerplexity, PerplexitySearchResult } from './perplexity';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import CoachSidebar from './components/CoachSidebar';
+import { CoachMessage } from './types/coach';
+import { sendCoachMessage, loadConversation, applyOperationsLocally, persistProgress, persistCurriculum } from './services/coachService';
+import { getCurrentWeek } from './utils/weekCalculator';
 
 type Task = {
   id: string;
@@ -78,6 +82,9 @@ export default function AIEnablementTracker() {
   const [taskProgress, setTaskProgress] = useState<Record<string, TaskProgress>>({});
   const [hoursPerWeekTarget, setHoursPerWeekTarget] = useState<number | undefined>(undefined);
   const [focusAreas, setFocusAreas] = useState<string[] | undefined>(undefined);
+  const [coachSidebarOpen, setCoachSidebarOpen] = useState(false);
+  const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
+  const [sendingCoach, setSendingCoach] = useState(false);
   
   // Perplexity search state
   const [searchResults, setSearchResults] = useState<Map<string, PerplexitySearchResult>>(new Map());
@@ -177,6 +184,19 @@ export default function AIEnablementTracker() {
     };
 
     loadUserProgress();
+  }, []);
+
+  useEffect(() => {
+    const loadCoach = async () => {
+      try {
+        const messages = await loadConversation();
+        setCoachMessages(messages);
+      } catch (err) {
+        console.error('Failed to load coach conversation:', err);
+      }
+    };
+
+    loadCoach();
   }, []);
 
   const toggleTask = async (taskId: string) => {
@@ -390,6 +410,47 @@ export default function AIEnablementTracker() {
     }));
   };
 
+  const handleCoachSend = async (message: string) => {
+    const timestamp = Date.now();
+    setCoachMessages(prev => [...prev, { role: 'user', content: message, createdAt: timestamp }]);
+    setSendingCoach(true);
+
+    try {
+      const response = await sendCoachMessage(message);
+      setCoachMessages(prev => [...prev, { role: 'assistant', content: response.message, createdAt: Date.now(), operations: response.operations, weeklyPlan: response.weeklyPlan }]);
+
+      const { curriculum: updatedCurriculumObj, taskProgress: updatedTaskProgress } = applyOperationsLocally(
+        response.operations || [],
+        { phases: curriculum },
+        taskProgress
+      );
+
+      const updatedCompleted = new Set(completedTasks);
+      response.operations?.forEach(op => {
+        if (op.type === 'update_status') {
+          if (op.status === 'done') {
+            updatedCompleted.add(op.taskId);
+          } else {
+            updatedCompleted.delete(op.taskId);
+          }
+        }
+      });
+
+      setCompletedTasks(updatedCompleted);
+      setTaskProgress(updatedTaskProgress);
+      setCurriculum(updatedCurriculumObj.phases as Phase[]);
+      localStorage.setItem('ai-plan-progress', JSON.stringify(Array.from(updatedCompleted)));
+
+      await persistProgress(updatedTaskProgress, hoursPerWeekTarget, focusAreas);
+      await persistCurriculum(updatedCurriculumObj);
+    } catch (err) {
+      console.error('Coach send failed:', err);
+      setCoachMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not update the plan. Please try again.', createdAt: Date.now() }]);
+    } finally {
+      setSendingCoach(false);
+    }
+  };
+
   // Handle Perplexity search
   const handleSearch = async (searchKey: string, query: string) => {
     // Toggle: if already expanded, collapse it
@@ -478,6 +539,12 @@ export default function AIEnablementTracker() {
     return Math.round((completedTasks.size / totalTasks) * 100);
   };
 
+  const totalTasksCount = curriculum.reduce((acc, phase) =>
+    acc + phase.weeks.reduce((wAcc, week) => wAcc + week.tasks.length, 0), 0);
+
+  const totalWeeks = curriculum.reduce((acc, phase) => acc + phase.weeks.length, 0);
+  const currentWeek = getCurrentWeek(curriculum, completedTasks);
+
   const isWeekComplete = (week: Week) => {
     return week.tasks.every((t) => completedTasks.has(t.id));
   };
@@ -496,6 +563,7 @@ export default function AIEnablementTracker() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 text-slate-900 p-4 md:p-8 font-sans">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 animate-fade-in">
@@ -1020,6 +1088,30 @@ export default function AIEnablementTracker() {
         </div>
       </div>
     </div>
+
+    <CoachSidebar
+      isOpen={coachSidebarOpen}
+      onClose={() => setCoachSidebarOpen(false)}
+      messages={coachMessages}
+      onSend={handleCoachSend}
+      sending={sendingCoach}
+      snapshot={{
+        currentWeek,
+        totalWeeks,
+        completedTasks: completedTasks.size,
+        totalTasks: totalTasksCount,
+        hoursPerWeekTarget,
+      }}
+    />
+
+    <button
+      onClick={() => setCoachSidebarOpen(true)}
+      className="fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+    >
+      <MessageCircle className="w-5 h-5" />
+      Coach
+    </button>
+    </>
   );
 }
 
