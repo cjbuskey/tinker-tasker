@@ -126,22 +126,34 @@ function buildSystemPrompt(curriculum: Curriculum | null, progress: UserProgress
     {
       role: 'system',
       content: `
-You are a Plan Coach Agent that adjusts a 12-week curriculum.
-You must reply with a JSON object containing: message, operations[], optional weeklyPlan.
-Allowed operations:
-- update_status { taskId, status: todo|in_progress|done|skipped }
-- reschedule { taskId, newWeek }
-- add_task { week, task { text, estimatedMinutes?, category? } }
-Weekly plan shape: { week, tasks: string[], estimatedMinutes? }.
-Be concise and actionable.`,
+You are a Plan Coach Agent that helps users with a 12-week AI agent curriculum.
+
+RESPONSE FORMAT (required JSON):
+{
+  "message": "Human-readable summary with specific task details",
+  "operations": [/* array of operations */],
+  "weeklyPlan": { "week": number, "tasks": ["Full task text..."], "estimatedMinutes": number }
+}
+
+ALLOWED OPERATIONS:
+- update_status: { "type": "update_status", "taskId": "w1t1", "status": "todo|in_progress|done|skipped" }
+- reschedule: { "type": "reschedule", "taskId": "w1t1", "newWeek": 2 }
+- add_task: { "type": "add_task", "week": 1, "task": { "text": "Full task description", "estimatedMinutes": 60, "category": "mcp" } }
+
+IMPORTANT:
+- In "message", explain WHAT tasks you're recommending with full task names/descriptions
+- In "weeklyPlan.tasks", use FULL task text from curriculum, NOT just task IDs
+- Be specific: reference actual task names like "Set up MCP dev environment" not "w1t1"
+- Check user's current progress (statuses) before suggesting changes
+- Don't repeat previous suggestions; build on the conversation history`,
     },
     {
       role: 'system',
-      content: `Curriculum summary: ${JSON.stringify(curriculum ?? { phases: [] }).slice(0, 12000)}`,
+      content: `Full curriculum (tasks with IDs and text): ${JSON.stringify(curriculum ?? { phases: [] }).slice(0, 14000)}`,
     },
     {
       role: 'system',
-      content: `User progress summary: ${JSON.stringify(summary).slice(0, 4000)}`,
+      content: `User progress (task statuses, confidence, notes): ${JSON.stringify(summary).slice(0, 5000)}`,
     },
   ];
 }
@@ -164,8 +176,8 @@ export async function runCoachAgent(userId: string, userMessage: string): Promis
 
   const response = await anthropic.messages.create({
     model: ANTHROPIC_MODEL,
-    max_tokens: 800,
-    temperature: 0.3,
+    max_tokens: 1500,
+    temperature: 0.2,
     system: prompt.map((p) => p.content).join('\n\n'),
     messages: [
       ...convo.map((m) => ({

@@ -66,7 +66,7 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
         </button>
       </div>
 
-      <div className="px-4 pt-3 flex-shrink-0">
+      <div className="px-4 pt-3 pb-4 flex-shrink-0 border-b border-slate-100">
         <ProgressSnapshot {...snapshot} weeklyPlanMinutes={lastWeeklyPlanMinutes} />
         <div className="flex gap-2 mt-3">
           <button
@@ -78,7 +78,7 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
         </div>
       </div>
 
-      <div className="px-4 flex-shrink-0">
+      <div className="px-4 pt-4 flex-shrink-0">
         <div className="flex gap-2 flex-wrap mb-4">
           {QUICK_TEMPLATES.map((t) => (
             <button
