@@ -34,19 +34,19 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.coachAgent = void 0;
-const functions = __importStar(require("firebase-functions"));
+const https_1 = require("firebase-functions/v2/https");
+const v2_1 = require("firebase-functions/v2");
 const admin = __importStar(require("firebase-admin"));
 const coachAgent_1 = require("./coachAgent");
 if (!admin.apps.length) {
     admin.initializeApp();
 }
-exports.coachAgent = functions.https.onCall(async (data, context) => {
-    const userId = context?.auth?.uid ?? 'default';
-    const userMessage = (data && typeof data.message === 'string' && data.message) ||
-        (data && data.data && typeof data.data.message === 'string' && data.data.message) ||
-        '';
+(0, v2_1.setGlobalOptions)({ secrets: ['ANTHROPIC_API_KEY'] });
+exports.coachAgent = (0, https_1.onCall)(async (request) => {
+    const userId = request.auth?.uid ?? 'default';
+    const userMessage = (request.data && typeof request.data.message === 'string' && request.data.message) || '';
     if (!userMessage) {
-        throw new functions.https.HttpsError('invalid-argument', 'message is required');
+        throw new https_1.HttpsError('invalid-argument', 'message is required');
     }
     try {
         const result = await (0, coachAgent_1.runCoachAgent)(userId, userMessage);
@@ -54,6 +54,6 @@ exports.coachAgent = functions.https.onCall(async (data, context) => {
     }
     catch (err) {
         console.error('coachAgent error', err);
-        throw new functions.https.HttpsError('internal', err?.message || 'Unknown error');
+        throw new https_1.HttpsError('internal', err?.message || 'Unknown error');
     }
 });

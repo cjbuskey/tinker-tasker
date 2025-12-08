@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 
-if (!apiKey) {
+if (!apiKey && process.env.FUNCTIONS_EMULATOR !== 'true') {
   console.warn('ANTHROPIC_API_KEY is not set. Cloud Function will fail at runtime.');
 }
 
