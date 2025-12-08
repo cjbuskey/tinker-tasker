@@ -112,6 +112,8 @@ function buildSystemPrompt(curriculum: Curriculum | null, progress: UserProgress
   const summary = {
     hoursPerWeekTarget: progress.hoursPerWeekTarget ?? 'unknown',
     focusAreas: progress.focusAreas ?? [],
+    // include full status map for context
+    statuses: progress.taskProgress ?? {},
     completed: Object.entries(progress.taskProgress || {})
       .filter(([, v]) => v.status === 'done')
       .map(([k]) => k),
@@ -212,6 +214,21 @@ export async function runCoachAgent(userId: string, userMessage: string): Promis
   const newHistory: CoachMessage[] = [...history, { role: 'user', content: userMessage, createdAt: Date.now() }, assistantMessage];
   await saveConversation(userId, trimHistory(newHistory));
 
-  return parsed;
+  // Normalize operations to ensure downstream expects "type"
+  const normalizedOps: AgentOperation[] = (parsed.operations || []).map((op: any) => {
+    if (op.type) return op as AgentOperation;
+    if (op.operation === 'add_task') {
+      return { type: 'add_task', week: op.week, task: op.task };
+    }
+    if (op.operation === 'update_status') {
+      return { type: 'update_status', taskId: op.taskId, status: op.status };
+    }
+    if (op.operation === 'reschedule') {
+      return { type: 'reschedule', taskId: op.taskId, newWeek: op.newWeek };
+    }
+    return op as AgentOperation;
+  });
+
+  return { ...parsed, operations: normalizedOps };
 }
 

@@ -57,10 +57,24 @@ export function applyOperationsLocally(
   curriculum: Curriculum,
   taskProgress: TaskProgress,
 ): { curriculum: Curriculum; taskProgress: TaskProgress } {
+  const normalizedOps: AgentOperation[] = operations.map((op: any) => {
+    if (op.type) return op as AgentOperation;
+    if (op.operation === 'add_task') {
+      return { type: 'add_task', week: op.week, task: op.task };
+    }
+    if (op.operation === 'update_status') {
+      return { type: 'update_status', taskId: op.taskId, status: op.status };
+    }
+    if (op.operation === 'reschedule') {
+      return { type: 'reschedule', taskId: op.taskId, newWeek: op.newWeek };
+    }
+    return op as AgentOperation;
+  });
+
   let updatedCurriculum = deepClone(curriculum);
   const updatedProgress: TaskProgress = { ...taskProgress };
 
-  for (const op of operations) {
+  for (const op of normalizedOps) {
     if (op.type === 'update_status') {
       updatedProgress[op.taskId] = { ...(updatedProgress[op.taskId] || {}), status: op.status };
     }

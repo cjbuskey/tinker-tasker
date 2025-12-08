@@ -54,9 +54,9 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
     <div
       className={`fixed inset-y-0 right-0 w-full max-w-md bg-gradient-to-b from-slate-50 to-white shadow-2xl border-l border-slate-200 transform transition-transform duration-300 z-30 ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}
+      } flex flex-col`}
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white flex-shrink-0">
         <div>
           <div className="text-sm font-semibold text-slate-800">Plan Coach</div>
           <div className="text-xs text-slate-500">Ask for weekly plans, adjustments, or pivots.</div>
@@ -66,9 +66,9 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
         </button>
       </div>
 
-      <div className="px-4 pt-3">
+      <div className="px-4 pt-3 flex-shrink-0">
         <ProgressSnapshot {...snapshot} weeklyPlanMinutes={lastWeeklyPlanMinutes} />
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-2 mt-3">
           <button
             onClick={() => onClear()}
             className="text-xs px-3 py-2 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -78,8 +78,8 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
         </div>
       </div>
 
-      <div className="px-4">
-        <div className="flex gap-2 flex-wrap mb-3">
+      <div className="px-4 flex-shrink-0">
+        <div className="flex gap-2 flex-wrap mb-4">
           {QUICK_TEMPLATES.map((t) => (
             <button
               key={t}
@@ -92,7 +92,7 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
         </div>
       </div>
 
-      <div className="px-4 pb-32 overflow-y-auto h-[calc(100%-220px)]">
+      <div className="px-4 pb-4 overflow-y-auto flex-1 min-h-0">
         {messages.length === 0 && (
           <div className="text-sm text-slate-500 bg-white border border-dashed border-slate-200 rounded-lg p-4">
             Start by telling the coach where you are and your time this week.
@@ -104,7 +104,7 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
         <div ref={endRef} />
       </div>
 
-      <div className="absolute bottom-0 inset-x-0 bg-white border-t border-slate-200 p-3">
+      <div className="bg-white border-t border-slate-200 p-3 flex-shrink-0">
         <div className="flex items-end gap-2">
           <textarea
             className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
