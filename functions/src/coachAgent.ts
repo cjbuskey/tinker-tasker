@@ -14,7 +14,8 @@ const ANTHROPIC_MODEL =
 type AgentOperation =
   | { type: 'update_status'; taskId: string; status: 'todo' | 'in_progress' | 'done' | 'skipped' }
   | { type: 'reschedule'; taskId: string; newWeek: number }
-  | { type: 'add_task'; week: number; task: { id?: string; text: string; estimatedMinutes?: number; category?: string } };
+  | { type: 'add_task'; week: number; task: { id?: string; text: string; estimatedMinutes?: number; category?: string } }
+  | { type: 'delete_task'; taskId: string };
 
 type WeeklyPlan = {
   week: number;
@@ -139,13 +140,46 @@ ALLOWED OPERATIONS:
 - update_status: { "type": "update_status", "taskId": "w1t1", "status": "todo|in_progress|done|skipped" }
 - reschedule: { "type": "reschedule", "taskId": "w1t1", "newWeek": 2 }
 - add_task: { "type": "add_task", "week": 1, "task": { "text": "Full task description", "estimatedMinutes": 60, "category": "mcp" } }
+- delete_task: { "type": "delete_task", "taskId": "w1t1" }
 
-IMPORTANT:
-- In "message", explain WHAT tasks you're recommending with full task names/descriptions
+CRITICAL CONVERSATION RULES:
+1. READ THE ENTIRE CONVERSATION HISTORY before responding
+2. If user asks for "more", "additional", "anything else", or "what else" - SUGGEST NEW ITEMS, don't repeat what you already said
+3. If you already suggested tasks X, Y, Z and user asks "anything else?", suggest tasks A, B, C from the curriculum
+4. Reference your previous suggestions explicitly: "In addition to the X, Y, Z I mentioned, you could also..."
+5. Be conversationally aware - if user is asking a follow-up, acknowledge what was discussed before
+
+CONFIRMATION PROTOCOL:
+6. When user asks "what tasks could I add?" or "what should I remove?":
+   - IMMEDIATELY suggest specific tasks in your first response
+   - Include "weeklyPlan" showing the proposed changes
+   - Do NOT include "operations" array in this response
+   - Format your message with markdown bullets
+   - End with: "Shall I add these tasks to Week X?"
+   
+7. When user CONFIRMS (says "yes", "do it", "add them", "sure", or clicks Yes button):
+   - NOW include the "operations" array to apply the changes
+   - Do NOT include "weeklyPlan" in confirmation response
+   - Keep message simple: "✓ I've added 4 tasks to Week 1."
+   - Do NOT repeat the task list or show JSON
+   
+8. If user rejects, acknowledge and do not send operations.
+
+MESSAGE FORMATTING:
+- Use clear markdown formatting in "message" field
+- Use bullet points (- ) for lists of tasks
+- Use **bold** for emphasis
+- Write naturally, like talking to a colleague
+- NEVER output raw JSON structures with curly braces in the message
+- Example GOOD proposal: "Here are some tasks you could add:\n\n- **Add Logging**: Track server usage (90 min)\n- **Add Auth**: Secure your API (2.5 hrs)\n\nShall I add these to Week 1?"
+- Example GOOD confirmation: "✓ I've added 4 tasks to Week 1. They're ready for you to work on!"
+- Example BAD: Showing any JSON with { } or operations arrays in the message text
+
+TASK DETAILS:
+- In "message", explain WHAT tasks you're recommending with full task names/descriptions using markdown
 - In "weeklyPlan.tasks", use FULL task text from curriculum, NOT just task IDs
 - Be specific: reference actual task names like "Set up MCP dev environment" not "w1t1"
-- Check user's current progress (statuses) before suggesting changes
-- Don't repeat previous suggestions; build on the conversation history`,
+- Check user's current progress (statuses) before suggesting changes`,
     },
     {
       role: 'system',
@@ -160,7 +194,7 @@ IMPORTANT:
 
 function trimHistory(history: CoachMessage[]): CoachMessage[] {
   const sorted = [...history].sort((a, b) => a.createdAt - b.createdAt);
-  const last = sorted.slice(-8);
+  const last = sorted.slice(-12); // Keep more context
   return last;
 }
 
@@ -173,6 +207,17 @@ export async function runCoachAgent(userId: string, userMessage: string): Promis
 
   const prompt = buildSystemPrompt(curriculum, progress);
   const convo = trimHistory(history);
+  
+  // Add conversation context reminder
+  if (convo.length > 0) {
+    const recentContext = convo.slice(-4).map(m => 
+      `${m.role === 'user' ? 'User' : 'You'}: ${m.content.slice(0, 200)}${m.content.length > 200 ? '...' : ''}`
+    ).join('\n');
+    prompt.push({
+      role: 'system',
+      content: `RECENT CONVERSATION CONTEXT (last few exchanges):\n${recentContext}\n\nRemember: Build on this context. Don't repeat what you already said. If user asks for "more" or "anything else", provide NEW suggestions.`
+    });
+  }
 
   const response = await anthropic.messages.create({
     model: ANTHROPIC_MODEL,

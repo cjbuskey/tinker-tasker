@@ -1,7 +1,8 @@
 export type AgentOperation =
   | { type: 'update_status'; taskId: string; status: 'todo' | 'in_progress' | 'done' | 'skipped' }
   | { type: 'reschedule'; taskId: string; newWeek: number }
-  | { type: 'add_task'; week: number; task: { id?: string; text: string; estimatedMinutes?: number; category?: string } };
+  | { type: 'add_task'; week: number; task: { id?: string; text: string; estimatedMinutes?: number; category?: string } }
+  | { type: 'delete_task'; taskId: string };
 
 export type WeeklyPlan = {
   week: number;

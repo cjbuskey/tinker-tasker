@@ -99,8 +99,22 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClea
           </div>
         )}
         {messages.map((m, idx) => (
-          <CoachMessage key={idx} message={m} />
+          <CoachMessage
+            key={idx}
+            message={m}
+            isLast={idx === messages.length - 1}
+            onConfirm={() => onSend('Yes, do it.')}
+            onReject={() => onSend('No, thanks.')}
+          />
         ))}
+        {sending && (
+          <div className="flex justify-start animate-fade-in my-2">
+            <div className="bg-slate-100 text-slate-500 rounded-lg rounded-tl-none px-4 py-3 text-sm flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Thinking...
+            </div>
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 

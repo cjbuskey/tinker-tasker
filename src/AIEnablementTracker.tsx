@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, ChevronDown, ChevronRight, BookOpen, ExternalLink, Trophy, Code, Edit2, Save, Plus, Trash2, X, Cloud, CloudOff, Search, Loader2, MessageCircle } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { CheckCircle, Circle, ChevronDown, ChevronUp, ChevronRight, BookOpen, ExternalLink, Trophy, Code, Edit2, Save, Plus, Trash2, X, Cloud, CloudOff, Search, Loader2, MessageCircle, GripVertical } from 'lucide-react';
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { searchWithPerplexity, PerplexitySearchResult } from './perplexity';
@@ -410,6 +411,101 @@ export default function AIEnablementTracker() {
     }));
   };
 
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination, type } = result;
+
+    if (!destination) return;
+
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    if (type === 'TASK') {
+      const weekId = parseInt(source.droppableId.replace('week-', ''));
+      
+      setCurriculum((prev) => {
+        const newPhases = prev.map(p => ({
+          ...p,
+          weeks: p.weeks.map(w => {
+            if (w.id === weekId) {
+              const newTasks = [...w.tasks];
+              const [moved] = newTasks.splice(source.index, 1);
+              newTasks.splice(destination.index, 0, moved);
+              return { ...w, tasks: newTasks };
+            }
+            return w;
+          })
+        }));
+        return newPhases;
+      });
+    }
+
+    if (type === 'SUBTASK') {
+      const taskId = source.droppableId.replace('subtasks-', '');
+      
+      setCurriculum((prev) => {
+        const newPhases = prev.map(p => ({
+          ...p,
+          weeks: p.weeks.map(w => ({
+            ...w,
+            tasks: w.tasks.map(t => {
+              if (t.id === taskId && t.subtasks) {
+                const newSubtasks = [...t.subtasks];
+                const [moved] = newSubtasks.splice(source.index, 1);
+                newSubtasks.splice(destination.index, 0, moved);
+                return { ...t, subtasks: newSubtasks };
+              }
+              return t;
+            })
+          }))
+        }));
+        return newPhases;
+      });
+    }
+  };
+
+  const moveTask = (phaseId: string, weekId: number, taskId: string, direction: 'next' | 'prev') => {
+    setCurriculum((prev) => {
+      const flatWeeks: { phaseId: string; weekIndex: number; weekId: number }[] = [];
+      prev.forEach((p) => {
+        p.weeks.forEach((w, wIdx) => {
+          flatWeeks.push({ phaseId: p.id, weekIndex: wIdx, weekId: w.id });
+        });
+      });
+
+      const currentIndex = flatWeeks.findIndex((fw) => fw.phaseId === phaseId && fw.weekId === weekId);
+      if (currentIndex === -1) return prev;
+
+      const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+      if (targetIndex < 0 || targetIndex >= flatWeeks.length) return prev;
+
+      const target = flatWeeks[targetIndex];
+
+      const newPhases = prev.map(p => ({
+        ...p,
+        weeks: p.weeks.map(w => ({ ...w, tasks: [...w.tasks] }))
+      }));
+
+      const sourcePhase = newPhases.find(p => p.id === phaseId);
+      const sourceWeek = sourcePhase?.weeks.find(w => w.id === weekId);
+      const targetPhase = newPhases.find(p => p.id === target.phaseId);
+      const targetWeek = targetPhase?.weeks.find(w => w.id === target.weekId);
+
+      if (sourceWeek && targetWeek) {
+        const tIdx = sourceWeek.tasks.findIndex(t => t.id === taskId);
+        if (tIdx !== -1) {
+          const [moved] = sourceWeek.tasks.splice(tIdx, 1);
+          targetWeek.tasks.push(moved);
+        }
+      }
+
+      return newPhases;
+    });
+  };
+
   const handleClearCoach = async () => {
     try {
       await clearConversation();
@@ -426,6 +522,9 @@ export default function AIEnablementTracker() {
 
     try {
       const response = await sendCoachMessage(message);
+      console.log('Coach response:', response);
+      console.log('Operations to apply:', response.operations);
+      
       setCoachMessages(prev => [...prev, { role: 'assistant', content: response.message, createdAt: Date.now(), operations: response.operations, weeklyPlan: response.weeklyPlan }]);
 
       const { curriculum: updatedCurriculumObj, taskProgress: updatedTaskProgress } = applyOperationsLocally(
@@ -433,6 +532,9 @@ export default function AIEnablementTracker() {
         { phases: curriculum },
         taskProgress
       );
+      
+      console.log('Curriculum before:', curriculum.length, 'phases');
+      console.log('Curriculum after:', updatedCurriculumObj.phases.length, 'phases');
 
       const updatedCompleted = new Set(completedTasks);
       response.operations?.forEach(op => {
@@ -573,6 +675,7 @@ export default function AIEnablementTracker() {
 
   return (
     <>
+    <DragDropContext onDragEnd={onDragEnd}>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 text-slate-900 p-4 md:p-8 font-sans">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 animate-fade-in">
@@ -718,35 +821,81 @@ export default function AIEnablementTracker() {
                       </div>
 
                       <div className="space-y-2.5 mt-4">
-                        {week.tasks.map((task) => (
-                          <div key={task.id} className="space-y-1">
-                            {editMode ? (
-                              // EDIT MODE: Editable task
-                              <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 space-y-3">
-                                <div className="flex flex-col gap-2 w-full">
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="text"
-                                      value={task.text}
-                                      onChange={(e) => updateTask(phase.id, week.id, task.id, { text: e.target.value })}
-                                      className="flex-grow px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                      placeholder="Task description"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={task.time}
-                                      onChange={(e) => updateTask(phase.id, week.id, task.id, { time: e.target.value })}
-                                      className="w-24 px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
-                                      placeholder="1 hr"
-                                    />
-                                    <button
-                                      onClick={() => deleteTask(phase.id, week.id, task.id)}
-                                      className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
-                                      title="Delete task"
+                        <Droppable droppableId={`week-${week.id}`} type="TASK" isDropDisabled={!editMode}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className="space-y-2.5"
+                            >
+                              {week.tasks.map((task, taskIndex) => (
+                                <Draggable
+                                  key={task.id}
+                                  draggableId={task.id}
+                                  index={taskIndex}
+                                  isDragDisabled={!editMode}
+                                >
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      style={{
+                                        ...provided.draggableProps.style,
+                                        opacity: snapshot.isDragging ? 0.8 : 1,
+                                      }}
                                     >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
+                                      <div className="space-y-1">
+                                        {editMode ? (
+                                          // EDIT MODE: Editable task
+                                          <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 space-y-3 relative">
+                                            {/* Drag Handle */}
+                                            <div
+                                              {...provided.dragHandleProps}
+                                              className="absolute left-2 top-4 text-amber-300 hover:text-amber-500 cursor-move p-1"
+                                            >
+                                              <GripVertical className="w-5 h-5" />
+                                            </div>
+                                            
+                                            <div className="flex flex-col gap-2 w-full pl-6">
+                                              <div className="flex gap-2">
+                                                <input
+                                                  type="text"
+                                                  value={task.text}
+                                                  onChange={(e) => updateTask(phase.id, week.id, task.id, { text: e.target.value })}
+                                                  className="flex-grow px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                                  placeholder="Task description"
+                                                />
+                                                <input
+                                                  type="text"
+                                                  value={task.time}
+                                                  onChange={(e) => updateTask(phase.id, week.id, task.id, { time: e.target.value })}
+                                                  className="w-24 px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
+                                                  placeholder="1 hr"
+                                                />
+                                                <button
+                                                  onClick={() => deleteTask(phase.id, week.id, task.id)}
+                                                  className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
+                                                  title="Delete task"
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </button>
+                                                <div className="flex flex-col gap-0.5 ml-2 border-l pl-2 border-slate-300">
+                                                  <button
+                                                    onClick={() => moveTask(phase.id, week.id, task.id, 'prev')}
+                                                    className="p-0.5 hover:bg-indigo-100 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                                                    title="Move to previous week"
+                                                  >
+                                                    <ChevronUp className="w-4 h-4" />
+                                                  </button>
+                                                  <button
+                                                    onClick={() => moveTask(phase.id, week.id, task.id, 'next')}
+                                                    className="p-0.5 hover:bg-indigo-100 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                                                    title="Move to next week"
+                                                  >
+                                                    <ChevronDown className="w-4 h-4" />
+                                                  </button>
+                                                </div>
+                                              </div>
                                   <div className="flex flex-wrap gap-2 text-xs">
                                     <select
                                       value={task.category || ''}
@@ -812,41 +961,71 @@ export default function AIEnablementTracker() {
                                   </div>
                                 </div>
                                 
-                                {/* Subtasks in edit mode */}
-                                <div className="ml-4 space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Subtasks</span>
-                                    <button
-                                      onClick={() => addSubtask(phase.id, week.id, task.id)}
-                                      className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors"
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                      Add Subtask
-                                    </button>
-                                  </div>
-                                  {task.subtasks?.map((subtask, idx) => (
-                                    <div key={idx} className="flex gap-2">
-                                      <input
-                                        type="text"
-                                        value={subtask}
-                                        onChange={(e) => updateSubtask(phase.id, week.id, task.id, idx, e.target.value)}
-                                        className="flex-grow px-3 py-1.5 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                        placeholder="Subtask description"
-                                      />
-                                      <button
-                                        onClick={() => deleteSubtask(phase.id, week.id, task.id, idx)}
-                                        className="px-2 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-md transition-colors"
-                                        title="Delete subtask"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : (
-                              // VIEW MODE: Normal task display
-                              <>
+                                 {/* Subtasks in edit mode */}
+                                 <div className="ml-4 space-y-2">
+                                   <div className="flex items-center justify-between">
+                                     <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Subtasks</span>
+                                     <button
+                                       onClick={() => addSubtask(phase.id, week.id, task.id)}
+                                       className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors"
+                                     >
+                                       <Plus className="w-3 h-3" />
+                                       Add Subtask
+                                     </button>
+                                   </div>
+                                   <Droppable droppableId={`subtasks-${task.id}`} type="SUBTASK" isDropDisabled={!editMode}>
+                                     {(provided) => (
+                                       <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                                         {task.subtasks?.map((subtask, idx) => (
+                                           <Draggable
+                                             key={`${task.id}-sub-${idx}`}
+                                             draggableId={`${task.id}-sub-${idx}`}
+                                             index={idx}
+                                             isDragDisabled={!editMode}
+                                           >
+                                             {(provided, snapshot) => (
+                                               <div
+                                                 ref={provided.innerRef}
+                                                 {...provided.draggableProps}
+                                                 className="flex gap-2 items-center"
+                                                 style={{
+                                                   ...provided.draggableProps.style,
+                                                   opacity: snapshot.isDragging ? 0.8 : 1,
+                                                 }}
+                                               >
+                                                 <div
+                                                   {...provided.dragHandleProps}
+                                                   className="text-slate-300 hover:text-slate-500 cursor-move flex-shrink-0"
+                                                 >
+                                                   <GripVertical className="w-4 h-4" />
+                                                 </div>
+                                                 <input
+                                                   type="text"
+                                                   value={subtask}
+                                                   onChange={(e) => updateSubtask(phase.id, week.id, task.id, idx, e.target.value)}
+                                                   className="flex-grow px-3 py-1.5 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                                   placeholder="Subtask description"
+                                                 />
+                                                 <button
+                                                   onClick={() => deleteSubtask(phase.id, week.id, task.id, idx)}
+                                                   className="px-2 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-md transition-colors"
+                                                   title="Delete subtask"
+                                                 >
+                                                   <X className="w-3 h-3" />
+                                                 </button>
+                                               </div>
+                                             )}
+                                           </Draggable>
+                                         ))}
+                                         {provided.placeholder}
+                                       </div>
+                                     )}
+                                   </Droppable>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          // VIEW MODE: Normal task display
+                                          <>
                                 <div 
                                   className={`
                                     group flex flex-wrap items-center gap-3 p-3.5 rounded-lg border transition-all duration-200 transform
@@ -997,7 +1176,7 @@ export default function AIEnablementTracker() {
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleSearch(subtaskKey, subtask);
+                                                handleSearch(subtaskKey, `${task.text}: ${subtask}`);
                                               }}
                                               className={`p-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
                                                 expandedSearches.has(subtaskKey)
@@ -1061,12 +1240,19 @@ export default function AIEnablementTracker() {
                                         </div>
                                       );
                                     })}
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
-                              </>
-                            )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
                           </div>
-                        ))}
+                        )}
+                      </Droppable>
                         
                         {/* Add New Task Button (only in edit mode) */}
                         {editMode && (
@@ -1097,6 +1283,7 @@ export default function AIEnablementTracker() {
         </div>
       </div>
     </div>
+    </DragDropContext>
 
     <CoachSidebar
       isOpen={coachSidebarOpen}

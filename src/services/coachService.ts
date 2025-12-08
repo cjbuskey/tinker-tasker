@@ -86,6 +86,10 @@ export function applyOperationsLocally(
     if (op.type === 'add_task') {
       updatedCurriculum = addTaskToWeek(updatedCurriculum, op.week, op.task);
     }
+
+    if (op.type === 'delete_task') {
+      updatedCurriculum = deleteTaskById(updatedCurriculum, op.taskId);
+    }
   }
 
   return { curriculum: updatedCurriculum, taskProgress: updatedProgress };
@@ -126,9 +130,12 @@ function addTaskToWeek(
   const clone = deepClone(curriculum);
   const taskId = task.id || `auto-${Date.now()}`;
 
+  console.log(`Adding task to week ${week}:`, task);
+  
   for (const phase of clone.phases) {
     const target = phase.weeks.find((w) => w.id === week);
     if (target) {
+      console.log(`Found target week ${week} in phase ${phase.id}, adding task`);
       target.tasks.push({
         id: taskId,
         text: task.text,
@@ -136,10 +143,31 @@ function addTaskToWeek(
         estimatedMinutes: task.estimatedMinutes,
         category: task.category,
       });
+      console.log(`Task added. Week now has ${target.tasks.length} tasks`);
       return clone;
     }
   }
 
+  console.warn(`Could not find week ${week} in curriculum`);
+  return clone;
+}
+
+function deleteTaskById(curriculum: Curriculum, taskId: string): Curriculum {
+  const clone = deepClone(curriculum);
+  console.log(`Deleting task: ${taskId}`);
+  
+  for (const phase of clone.phases) {
+    for (const week of phase.weeks) {
+      const taskIndex = week.tasks.findIndex((t) => t.id === taskId);
+      if (taskIndex >= 0) {
+        console.log(`Found and removing task ${taskId} from week ${week.id}`);
+        week.tasks.splice(taskIndex, 1);
+        return clone;
+      }
+    }
+  }
+
+  console.warn(`Could not find task ${taskId} to delete`);
   return clone;
 }
 
