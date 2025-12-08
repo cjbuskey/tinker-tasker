@@ -614,8 +614,6 @@ export default function AIEnablementTracker() {
           phases: curriculum,
           lastUpdated: new Date().toISOString()
         });
-        
-        alert('✅ Changes saved to cloud! \n\nYour curriculum will sync across all devices automatically.');
       } else {
         // Fallback: Save to localStorage and download
         localStorage.setItem('curriculum-data', JSON.stringify(curriculum));
