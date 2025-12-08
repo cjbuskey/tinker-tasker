@@ -672,17 +672,17 @@ export default function AIEnablementTracker() {
                                 
                                 {/* Task Search Results */}
                                 {expandedSearches.has(task.id) && searchResults.has(task.id) && (
-                                  <div className="ml-9 mr-3 mt-2 p-4 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in">
+                                  <div className="ml-9 mr-3 mt-2 p-4 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-hidden">
                                     <div className="flex items-start gap-2 mb-2">
                                       <Search className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1">
                                         <h4 className="text-xs font-semibold text-purple-900 mb-2">Perplexity Search Results</h4>
-                                        <div className="prose prose-sm max-w-none text-slate-700 
+                                        <div className="prose prose-sm max-w-none text-slate-700 break-words
                                           prose-headings:text-purple-900 prose-headings:font-semibold prose-headings:mb-2
                                           prose-p:text-slate-700 prose-p:leading-relaxed prose-p:mb-2
                                           prose-strong:text-slate-900 prose-strong:font-semibold
-                                          prose-code:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-[''] prose-code:after:content-[''] prose-code:font-mono
-                                          prose-pre:bg-slate-100 prose-pre:text-slate-800 prose-pre:p-3 prose-pre:rounded-md prose-pre:text-xs prose-pre:overflow-x-auto prose-pre:border prose-pre:border-slate-200
+                                          prose-code:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-[''] prose-code:after:content-[''] prose-code:font-mono prose-code:break-words
+                                          prose-pre:bg-slate-100 prose-pre:text-slate-800 prose-pre:p-3 prose-pre:rounded-md prose-pre:text-xs prose-pre:overflow-x-auto prose-pre:border prose-pre:border-slate-200 prose-pre:whitespace-pre-wrap prose-pre:break-words
                                           prose-ul:list-disc prose-ul:ml-4 prose-ul:mb-2 prose-ul:space-y-1
                                           prose-ol:list-decimal prose-ol:ml-4 prose-ol:mb-2 prose-ol:space-y-1
                                           prose-li:text-slate-700 prose-li:text-sm prose-li:leading-relaxed
@@ -748,17 +748,17 @@ export default function AIEnablementTracker() {
                                           
                                           {/* Subtask Search Results */}
                                           {expandedSearches.has(subtaskKey) && searchResults.has(subtaskKey) && (
-                                            <div className="ml-4 mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in">
+                                            <div className="ml-4 mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-hidden">
                                               <div className="flex items-start gap-2">
                                                 <Search className="w-3 h-3 text-purple-600 mt-0.5 flex-shrink-0" />
                                                 <div className="flex-1">
                                                   <h5 className="text-xs font-semibold text-purple-900 mb-1">Search Results</h5>
-                                                  <div className="prose prose-xs max-w-none text-slate-700 
+                                                  <div className="prose prose-xs max-w-none text-slate-700 break-words
                                                     prose-headings:text-purple-900 prose-headings:font-semibold prose-headings:mb-1 prose-headings:text-xs
                                                     prose-p:text-slate-700 prose-p:leading-relaxed prose-p:mb-1 prose-p:text-xs
                                                     prose-strong:text-slate-900 prose-strong:font-semibold
-                                                    prose-code:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-[''] prose-code:after:content-[''] prose-code:font-mono
-                                                    prose-pre:bg-slate-100 prose-pre:text-slate-800 prose-pre:p-2 prose-pre:rounded-md prose-pre:text-xs prose-pre:overflow-x-auto prose-pre:border prose-pre:border-slate-200
+                                                    prose-code:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-[''] prose-code:after:content-[''] prose-code:font-mono prose-code:break-words
+                                                    prose-pre:bg-slate-100 prose-pre:text-slate-800 prose-pre:p-2 prose-pre:rounded-md prose-pre:text-xs prose-pre:overflow-x-auto prose-pre:border prose-pre:border-slate-200 prose-pre:whitespace-pre-wrap prose-pre:break-words
                                                     prose-ul:list-disc prose-ul:ml-3 prose-ul:mb-1 prose-ul:space-y-0.5
                                                     prose-ol:list-decimal prose-ol:ml-3 prose-ol:mb-1 prose-ol:space-y-0.5
                                                     prose-li:text-slate-700 prose-li:text-xs prose-li:leading-relaxed
