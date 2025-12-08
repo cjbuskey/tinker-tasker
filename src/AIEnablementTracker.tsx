@@ -9,8 +9,40 @@ import remarkGfm from 'remark-gfm';
 type Task = {
   id: string;
   text: string;
-  time: string;
+  time: string;            // Human-readable ("1 hr", "2.5 hrs")
   subtasks?: string[];
+  // Metadata for agent legibility
+  category?:
+    | 'mcp'
+    | 'rag'
+    | 'memory'
+    | 'a2a'
+    | 'orchestration'
+    | 'learning'
+    | 'token_optimization'
+    | 'integration'
+    | 'security'
+    | 'demo';
+  skillLevel?: 'intro' | 'intermediate' | 'advanced';
+  estimatedMinutes?: number;
+  importance?: 1 | 2 | 3 | 4 | 5;
+  prerequisites?: string[];
+};
+
+type TaskStatus = 'todo' | 'in_progress' | 'done' | 'skipped';
+
+type TaskProgress = {
+  status: TaskStatus;
+  userConfidence?: number; // 1–5
+  notes?: string;
+};
+
+type UserProgress = {
+  completedTasks: string[]; // keep for backward compatibility
+  taskProgress: Record<string, TaskProgress>;
+  hoursPerWeekTarget?: number;
+  focusAreas?: string[]; // e.g., ['orchestration', 'a2a']
+  updatedAt: string;
 };
 
 type Resource = {
@@ -43,6 +75,9 @@ export default function AIEnablementTracker() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [taskProgress, setTaskProgress] = useState<Record<string, TaskProgress>>({});
+  const [hoursPerWeekTarget, setHoursPerWeekTarget] = useState<number | undefined>(undefined);
+  const [focusAreas, setFocusAreas] = useState<string[] | undefined>(undefined);
   
   // Perplexity search state
   const [searchResults, setSearchResults] = useState<Map<string, PerplexitySearchResult>>(new Map());
@@ -113,17 +148,77 @@ export default function AIEnablementTracker() {
     }
   }, []);
 
-  const toggleTask = (taskId: string) => {
-    setCompletedTasks((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
+  useEffect(() => {
+    const loadUserProgress = async () => {
+      try {
+        const progressRef = doc(db, 'userProgress', 'default');
+        const progressSnap = await getDoc(progressRef);
+        if (progressSnap.exists()) {
+          const data = progressSnap.data() as UserProgress;
+          if (data.completedTasks) {
+            setCompletedTasks((prev) => {
+              const merged = new Set(prev);
+              data.completedTasks.forEach((id) => merged.add(id));
+              localStorage.setItem('ai-plan-progress', JSON.stringify(Array.from(merged)));
+              return merged;
+            });
+          }
+          setTaskProgress(data.taskProgress || {});
+          if (data.hoursPerWeekTarget !== undefined) {
+            setHoursPerWeekTarget(data.hoursPerWeekTarget);
+          }
+          if (data.focusAreas) {
+            setFocusAreas(data.focusAreas);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load user progress from Firestore:', err);
       }
-      localStorage.setItem('ai-plan-progress', JSON.stringify(Array.from(newSet)));
-      return newSet;
-    });
+    };
+
+    loadUserProgress();
+  }, []);
+
+  const toggleTask = async (taskId: string) => {
+    const newCompleted = new Set(completedTasks);
+    if (newCompleted.has(taskId)) {
+      newCompleted.delete(taskId);
+    } else {
+      newCompleted.add(taskId);
+    }
+
+    const newTaskProgress: Record<string, TaskProgress> = { ...taskProgress };
+    if (newCompleted.has(taskId)) {
+      newTaskProgress[taskId] = {
+        ...(taskProgress[taskId] || {}),
+        status: 'done',
+      };
+    } else {
+      const existing = taskProgress[taskId];
+      if (existing && (existing.userConfidence !== undefined || existing.notes)) {
+        newTaskProgress[taskId] = { ...existing, status: 'todo' };
+      } else {
+        delete newTaskProgress[taskId];
+      }
+    }
+
+    setCompletedTasks(newCompleted);
+    setTaskProgress(newTaskProgress);
+    localStorage.setItem('ai-plan-progress', JSON.stringify(Array.from(newCompleted)));
+
+    const updatedUserProgress: UserProgress = {
+      completedTasks: Array.from(newCompleted),
+      taskProgress: newTaskProgress,
+      hoursPerWeekTarget: hoursPerWeekTarget ?? 5,
+      focusAreas: focusAreas ?? ['orchestration', 'a2a'],
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await setDoc(doc(db, 'userProgress', 'default'), updatedUserProgress, { merge: true });
+    } catch (err) {
+      console.error('Failed to sync user progress to Firestore:', err);
+    }
   };
 
   const toggleSubtasks = (taskId: string) => {
@@ -144,7 +239,12 @@ export default function AIEnablementTracker() {
       id: newTaskId,
       text: 'New Task',
       time: '1 hr',
-      subtasks: []
+      subtasks: [],
+      category: 'learning',
+      skillLevel: 'intro',
+      estimatedMinutes: 60,
+      importance: 3,
+      prerequisites: [],
     };
     
     setCurriculum(prev => prev.map(phase => {
@@ -546,28 +646,93 @@ export default function AIEnablementTracker() {
                             {editMode ? (
                               // EDIT MODE: Editable task
                               <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 space-y-3">
-                                <div className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    value={task.text}
-                                    onChange={(e) => updateTask(phase.id, week.id, task.id, { text: e.target.value })}
-                                    className="flex-grow px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                    placeholder="Task description"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={task.time}
-                                    onChange={(e) => updateTask(phase.id, week.id, task.id, { time: e.target.value })}
-                                    className="w-24 px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
-                                    placeholder="1 hr"
-                                  />
-                                  <button
-                                    onClick={() => deleteTask(phase.id, week.id, task.id)}
-                                    className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
-                                    title="Delete task"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
+                                <div className="flex flex-col gap-2 w-full">
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={task.text}
+                                      onChange={(e) => updateTask(phase.id, week.id, task.id, { text: e.target.value })}
+                                      className="flex-grow px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                      placeholder="Task description"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={task.time}
+                                      onChange={(e) => updateTask(phase.id, week.id, task.id, { time: e.target.value })}
+                                      className="w-24 px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
+                                      placeholder="1 hr"
+                                    />
+                                    <button
+                                      onClick={() => deleteTask(phase.id, week.id, task.id)}
+                                      className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
+                                      title="Delete task"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 text-xs">
+                                    <select
+                                      value={task.category || ''}
+                                      onChange={(e) =>
+                                        updateTask(phase.id, week.id, task.id, {
+                                          category: (e.target.value || undefined) as Task['category'],
+                                        })
+                                      }
+                                      className="px-2 py-1 border rounded"
+                                    >
+                                      <option value="">Category</option>
+                                      <option value="mcp">MCP</option>
+                                      <option value="rag">RAG</option>
+                                      <option value="memory">Memory</option>
+                                      <option value="a2a">A2A</option>
+                                      <option value="orchestration">Orchestration</option>
+                                      <option value="learning">Learning</option>
+                                      <option value="token_optimization">Token Optimization</option>
+                                      <option value="integration">Integration</option>
+                                      <option value="security">Security</option>
+                                      <option value="demo">Demo</option>
+                                    </select>
+                                    <select
+                                      value={task.skillLevel || ''}
+                                      onChange={(e) =>
+                                        updateTask(phase.id, week.id, task.id, {
+                                          skillLevel: e.target.value as Task['skillLevel'],
+                                        })
+                                      }
+                                      className="px-2 py-1 border rounded"
+                                    >
+                                      <option value="">Level</option>
+                                      <option value="intro">Intro</option>
+                                      <option value="intermediate">Intermediate</option>
+                                      <option value="advanced">Advanced</option>
+                                    </select>
+                                    <input
+                                      type="number"
+                                      min={15}
+                                      step={15}
+                                      value={task.estimatedMinutes ?? ''}
+                                      onChange={(e) =>
+                                        updateTask(phase.id, week.id, task.id, {
+                                          estimatedMinutes: e.target.value ? Number(e.target.value) : undefined,
+                                        })
+                                      }
+                                      placeholder="Minutes"
+                                      className="w-24 px-2 py-1 border rounded"
+                                    />
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={5}
+                                      value={task.importance ?? ''}
+                                      onChange={(e) =>
+                                        updateTask(phase.id, week.id, task.id, {
+                                          importance: e.target.value ? (Number(e.target.value) as 1 | 2 | 3 | 4 | 5) : undefined,
+                                        })
+                                      }
+                                      placeholder="1–5"
+                                      className="w-20 px-2 py-1 border rounded"
+                                    />
+                                  </div>
                                 </div>
                                 
                                 {/* Subtasks in edit mode */}
@@ -632,8 +797,34 @@ export default function AIEnablementTracker() {
                                       {task.text}
                                     </span>
                                   </div>
-                                  <div className={`text-xs font-mono px-2.5 py-1 rounded-md whitespace-nowrap transition-colors flex-shrink-0 ${completedTasks.has(task.id) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700'}`}>
-                                    {task.time}
+                                  <div className="flex flex-col gap-1">
+                                    <div className="text-xs text-slate-500 font-mono">
+                                      {task.time}
+                                    </div>
+                                    {(task.category || task.skillLevel || task.estimatedMinutes || task.importance) && (
+                                      <div className="flex flex-wrap gap-2 text-[11px] text-slate-500">
+                                        {task.category && (
+                                          <span className="px-2 py-0.5 rounded-full bg-slate-100">
+                                            {task.category}
+                                          </span>
+                                        )}
+                                        {task.skillLevel && (
+                                          <span className="px-2 py-0.5 rounded-full bg-slate-100">
+                                            {task.skillLevel}
+                                          </span>
+                                        )}
+                                        {typeof task.estimatedMinutes === 'number' && (
+                                          <span className="px-2 py-0.5 rounded-full bg-slate-100">
+                                            ~{task.estimatedMinutes} min
+                                          </span>
+                                        )}
+                                        {typeof task.importance === 'number' && (
+                                          <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                                            importance {task.importance}/5
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                   <button
                                     onClick={(e) => {
@@ -672,7 +863,7 @@ export default function AIEnablementTracker() {
                                 
                                 {/* Task Search Results */}
                                 {expandedSearches.has(task.id) && searchResults.has(task.id) && (
-                                  <div className="ml-0 mr-0 md:ml-9 md:mr-3 mt-3 md:mt-2 p-4 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-x-auto overflow-y-auto max-h-[60vh] md:max-h-none">
+                                  <div className="ml-0 mr-0 md:ml-9 md:mr-3 mt-3 md:mt-2 p-4 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full md:max-w-[calc(100%-40px)] md:mx-5 overflow-x-auto overflow-y-auto max-h-[60vh] md:max-h-none">
                                     <div className="flex items-start gap-2 mb-2">
                                       <Search className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1">
@@ -748,7 +939,7 @@ export default function AIEnablementTracker() {
                                           
                                           {/* Subtask Search Results */}
                                           {expandedSearches.has(subtaskKey) && searchResults.has(subtaskKey) && (
-                                            <div className="ml-0 md:ml-4 mt-3 md:mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-x-auto overflow-y-auto max-h-[60vh] md:max-h-none">
+                                            <div className="ml-0 md:ml-4 mt-3 md:mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full md:max-w-[calc(100%-32px)] md:mx-4 overflow-x-auto overflow-y-auto max-h-[60vh] md:max-h-none">
                                               <div className="flex items-start gap-2">
                                                 <Search className="w-3 h-3 text-purple-600 mt-0.5 flex-shrink-0" />
                                                 <div className="flex-1">

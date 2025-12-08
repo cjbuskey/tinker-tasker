@@ -19,7 +19,12 @@
             "subtasks": [
               "Install MCP SDK for Python",
               "Review Anthropic's MCP documentation"
-            ]
+            ],
+            "category": "mcp",
+            "skillLevel": "intro",
+            "estimatedMinutes": 60,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w1t2",
@@ -28,13 +33,23 @@
             "subtasks": [
               "Create a server that exposes 2-3 tools (e.g., get_customer_info, search_opportunities)",
               "Test with Claude Desktop integration"
-            ]
+            ],
+            "category": "mcp",
+            "skillLevel": "intro",
+            "estimatedMinutes": 180,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w1t3",
             "text": "Deploy to local Docker container",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "mcp",
+            "skillLevel": "intro",
+            "estimatedMinutes": 60,
+            "importance": 5,
+            "prerequisites": []
           }
         ]
       },
@@ -50,7 +65,12 @@
             "subtasks": [
               "Install ChromaDB or Pinecone",
               "Create embeddings for sample customer documents"
-            ]
+            ],
+            "category": "rag",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 90,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w2t2",
@@ -60,13 +80,23 @@
               "Add semantic_search tool to your MCP server",
               "Implement retrieval + generation workflow",
               "Test with various query types"
-            ]
+            ],
+            "category": "rag",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 150,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w2t3",
             "text": "Document token usage patterns",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "rag",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 60,
+            "importance": 5,
+            "prerequisites": []
           }
         ]
       },
@@ -82,7 +112,12 @@
             "subtasks": [
               "Add SQLite/PostgreSQL for conversation history",
               "Create remember_context and recall_context tools"
-            ]
+            ],
+            "category": "memory",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 120,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w3t2",
@@ -91,7 +126,12 @@
             "subtasks": [
               "Implement rolling context window",
               "Add automatic summarization for long conversations"
-            ]
+            ],
+            "category": "memory",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 120,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w3t3",
@@ -100,7 +140,12 @@
             "subtasks": [
               "Compare different context compression techniques",
               "Measure token usage across strategies"
-            ]
+            ],
+            "category": "memory",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 60,
+            "importance": 4,
+            "prerequisites": []
           }
         ]
       }
@@ -125,7 +170,12 @@
             "subtasks": [
               "Plan 3 agents: Researcher, Analyzer, Recommender",
               "Map communication flows"
-            ]
+            ],
+            "category": "a2a",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 60,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w4t2",
@@ -135,13 +185,23 @@
               "Set up agent discovery mechanism",
               "Create message passing infrastructure",
               "Build simple handoff between 2 agents"
-            ]
+            ],
+            "category": "a2a",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 180,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w4t3",
             "text": "Test inter-agent communication",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "a2a",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 60,
+            "importance": 5,
+            "prerequisites": []
           }
         ]
       },
@@ -157,7 +217,12 @@
             "subtasks": [
               "Connects to your MCP server for data retrieval",
               "Specializes in gathering customer information"
-            ]
+            ],
+            "category": "a2a",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 90,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w5t2",
@@ -166,7 +231,12 @@
             "subtasks": [
               "Processes data from Researcher",
               "Performs sentiment analysis and pattern detection"
-            ]
+            ],
+            "category": "a2a",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 90,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w5t3",
@@ -175,13 +245,23 @@
             "subtasks": [
               "Takes Analyzer output",
               "Generates actionable recommendations"
-            ]
+            ],
+            "category": "a2a",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 90,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w5t4",
             "text": "Wire all three together",
             "time": "0.5 hrs",
-            "subtasks": []
+            "subtasks": [],
+            "category": "a2a",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 30,
+            "importance": 4,
+            "prerequisites": []
           }
         ]
       },
@@ -198,7 +278,12 @@
               "Build router that selects appropriate agent(s)",
               "Add parallel execution for independent tasks",
               "Handle agent failures and retries"
-            ]
+            ],
+            "category": "orchestration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 150,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w6t2",
@@ -207,13 +292,23 @@
             "subtasks": [
               "Track agent interactions",
               "Measure latency and token usage per agent"
-            ]
+            ],
+            "category": "orchestration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 90,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w6t3",
             "text": "Test complex multi-step workflows",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "orchestration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 60,
+            "importance": 5,
+            "prerequisites": []
           }
         ]
       }
@@ -235,7 +330,12 @@
             "subtasks": [
               "Add user feedback collection",
               "Store successful/unsuccessful interaction patterns"
-            ]
+            ],
+            "category": "learning",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 120,
+            "importance": 3,
+            "prerequisites": []
           },
           {
             "id": "w7t2",
@@ -244,13 +344,23 @@
             "subtasks": [
               "Create few-shot example bank",
               "Implement dynamic prompt enhancement based on feedback"
-            ]
+            ],
+            "category": "learning",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 120,
+            "importance": 3,
+            "prerequisites": []
           },
           {
             "id": "w7t3",
             "text": "A/B test learning improvements",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "learning",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 60,
+            "importance": 3,
+            "prerequisites": []
           }
         ]
       },
@@ -266,7 +376,12 @@
             "subtasks": [
               "Cache embeddings and common queries",
               "Add semantic caching for similar questions"
-            ]
+            ],
+            "category": "token_optimization",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 120,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w8t2",
@@ -275,13 +390,23 @@
             "subtasks": [
               "Compress system prompts",
               "Use chain-of-thought selectively"
-            ]
+            ],
+            "category": "token_optimization",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 90,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w8t3",
             "text": "Implement streaming and partial responses",
             "time": "1.5 hrs",
-            "subtasks": []
+            "subtasks": [],
+            "category": "token_optimization",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 90,
+            "importance": 4,
+            "prerequisites": []
           }
         ]
       },
@@ -297,7 +422,12 @@
             "subtasks": [
               "Study Microsoft Copilot extensibility",
               "Review Google Gemini API patterns"
-            ]
+            ],
+            "category": "integration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 60,
+            "importance": 3,
+            "prerequisites": []
           },
           {
             "id": "w9t2",
@@ -306,13 +436,23 @@
             "subtasks": [
               "Create abstraction for different platforms",
               "Implement MCP-to-Copilot bridge"
-            ]
+            ],
+            "category": "integration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 180,
+            "importance": 3,
+            "prerequisites": []
           },
           {
             "id": "w9t3",
             "text": "Test cross-platform handoffs",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "integration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 60,
+            "importance": 3,
+            "prerequisites": []
           }
         ]
       }
@@ -334,7 +474,12 @@
             "subtasks": [
               "Add API key management",
               "Implement role-based access control"
-            ]
+            ],
+            "category": "security",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 120,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w10t2",
@@ -343,7 +488,12 @@
             "subtasks": [
               "Log all agent interactions",
               "Create compliance reports"
-            ]
+            ],
+            "category": "security",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 90,
+            "importance": 5,
+            "prerequisites": []
           },
           {
             "id": "w10t3",
@@ -352,7 +502,12 @@
             "subtasks": [
               "PII detection and masking",
               "Data retention policies"
-            ]
+            ],
+            "category": "security",
+            "skillLevel": "intermediate",
+            "estimatedMinutes": 90,
+            "importance": 5,
+            "prerequisites": []
           }
         ]
       },
@@ -368,7 +523,12 @@
             "subtasks": [
               "Simple Streamlit or Gradio interface",
               "Show agent interactions in real-time"
-            ]
+            ],
+            "category": "demo",
+            "skillLevel": "intro",
+            "estimatedMinutes": 120,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w11t2",
@@ -378,13 +538,23 @@
               "Architecture diagrams",
               "API documentation",
               "Deployment guide"
-            ]
+            ],
+            "category": "demo",
+            "skillLevel": "intro",
+            "estimatedMinutes": 120,
+            "importance": 4,
+            "prerequisites": []
           },
           {
             "id": "w11t3",
             "text": "Record demo walkthrough",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "demo",
+            "skillLevel": "intro",
+            "estimatedMinutes": 60,
+            "importance": 4,
+            "prerequisites": []
           }
         ]
       },
@@ -401,7 +571,12 @@
               "Multi-turn conversations with context switching",
               "Handling ambiguous requests",
               "Agent collaboration on complex tasks"
-            ]
+            ],
+            "category": "orchestration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 120,
+            "importance": 3,
+            "prerequisites": []
           },
           {
             "id": "w12t2",
@@ -411,13 +586,23 @@
               "Load testing",
               "Identify and fix bottlenecks",
               "Optimize for concurrent users"
-            ]
+            ],
+            "category": "orchestration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 120,
+            "importance": 3,
+            "prerequisites": []
           },
           {
             "id": "w12t3",
             "text": "Create reusable templates",
             "time": "1 hr",
-            "subtasks": []
+            "subtasks": [],
+            "category": "orchestration",
+            "skillLevel": "advanced",
+            "estimatedMinutes": 60,
+            "importance": 3,
+            "prerequisites": []
           }
         ]
       }
