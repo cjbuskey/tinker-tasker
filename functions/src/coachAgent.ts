@@ -6,8 +6,10 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
+// Default to a widely available model; override via secret/env ANTHROPIC_MODEL
+// Examples: claude-3-5-sonnet-20240620, claude-3-opus-20240229, claude-3-haiku-20240307
 const ANTHROPIC_MODEL =
-  process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620';
+  process.env.ANTHROPIC_MODEL || 'claude-3-haiku-20240307';
 
 type AgentOperation =
   | { type: 'update_status'; taskId: string; status: 'todo' | 'in_progress' | 'done' | 'skipped' }

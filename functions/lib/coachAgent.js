@@ -40,7 +40,9 @@ const anthropic_1 = require("./anthropic");
 if (!admin.apps.length) {
     admin.initializeApp();
 }
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620';
+// Default to a widely available model; override via secret/env ANTHROPIC_MODEL
+// Examples: claude-3-5-sonnet-20240620, claude-3-opus-20240229, claude-3-haiku-20240307
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-haiku-20240307';
 const db = admin.firestore();
 async function fetchCurriculum() {
     const snap = await db.doc('curriculum/main').get();
