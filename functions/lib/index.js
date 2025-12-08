@@ -42,7 +42,9 @@ if (!admin.apps.length) {
 }
 exports.coachAgent = functions.https.onCall(async (data, context) => {
     const userId = context?.auth?.uid ?? 'default';
-    const userMessage = data && typeof data.message === 'string' ? data.message : '';
+    const userMessage = (data && typeof data.message === 'string' && data.message) ||
+        (data && data.data && typeof data.data.message === 'string' && data.data.message) ||
+        '';
     if (!userMessage) {
         throw new functions.https.HttpsError('invalid-argument', 'message is required');
     }
