@@ -84,10 +84,24 @@ async function fetchConversation(userId: string): Promise<CoachMessage[]> {
   return data.messages || [];
 }
 
+function cleanMessage(message: CoachMessage): CoachMessage {
+  const cleaned: any = { ...message };
+  if (cleaned.weeklyPlan === undefined) delete cleaned.weeklyPlan;
+  if (cleaned.operations === undefined) delete cleaned.operations;
+  // Guard against undefined inside weeklyPlan (e.g., estimatedMinutes)
+  if (cleaned.weeklyPlan) {
+    if (cleaned.weeklyPlan.estimatedMinutes === undefined) {
+      delete cleaned.weeklyPlan.estimatedMinutes;
+    }
+  }
+  return cleaned;
+}
+
 async function saveConversation(userId: string, messages: CoachMessage[]) {
+  const cleanedMessages = messages.map(cleanMessage);
   await db.doc(`coachConversations/${userId}`).set(
     {
-      messages,
+      messages: cleanedMessages,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     },
     { merge: true },
