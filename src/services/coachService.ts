@@ -132,14 +132,19 @@ export async function persistProgress(
   userId = 'default',
 ) {
   const updatedAt = new Date().toISOString();
-  await setDoc(
-    doc(db, 'userProgress', userId),
-    { taskProgress: progress, hoursPerWeekTarget, focusAreas, updatedAt },
-    { merge: true },
-  );
+  const payload: any = { taskProgress: progress, updatedAt };
+  if (hoursPerWeekTarget !== undefined) payload.hoursPerWeekTarget = hoursPerWeekTarget;
+  if (focusAreas !== undefined) payload.focusAreas = focusAreas;
+  const cleaned = JSON.parse(JSON.stringify(payload));
+  await setDoc(doc(db, 'userProgress', userId), cleaned, { merge: true });
 }
 
 export async function persistCurriculum(curriculum: Curriculum) {
-  await setDoc(doc(db, 'curriculum', 'main'), { phases: curriculum.phases, lastUpdated: new Date().toISOString() }, { merge: true });
+  const cleaned = JSON.parse(JSON.stringify(curriculum));
+  await setDoc(
+    doc(db, 'curriculum', 'main'),
+    { phases: cleaned.phases, lastUpdated: new Date().toISOString() },
+    { merge: true },
+  );
 }
 

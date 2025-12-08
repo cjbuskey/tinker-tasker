@@ -181,10 +181,23 @@ export async function runCoachAgent(userId: string, userMessage: string): Promis
     try {
       parsed = JSON.parse(content.text) as AgentResponse;
     } catch (err) {
-      parsed = {
-        message: content.text || 'Coach could not parse a response.',
-        operations: [],
-      };
+      // Try to salvage JSON embedded in text
+      const maybeJson = content.text?.match(/\{[\s\S]*\}/);
+      if (maybeJson) {
+        try {
+          parsed = JSON.parse(maybeJson[0]) as AgentResponse;
+        } catch {
+          parsed = {
+            message: content.text || 'Coach could not parse a response.',
+            operations: [],
+          };
+        }
+      } else {
+        parsed = {
+          message: content.text || 'Coach could not parse a response.',
+          operations: [],
+        };
+      }
     }
   }
 

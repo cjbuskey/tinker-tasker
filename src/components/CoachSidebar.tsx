@@ -104,6 +104,12 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, sendin
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={sending}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
           />
           <button
             onClick={handleSend}
