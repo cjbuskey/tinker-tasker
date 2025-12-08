@@ -672,7 +672,7 @@ export default function AIEnablementTracker() {
                                 
                                 {/* Task Search Results */}
                                 {expandedSearches.has(task.id) && searchResults.has(task.id) && (
-                                  <div className="ml-9 mr-3 mt-2 p-4 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-hidden">
+                                  <div className="ml-0 mr-0 md:ml-9 md:mr-3 mt-3 md:mt-2 p-4 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-x-auto overflow-y-auto max-h-[60vh] md:max-h-none">
                                     <div className="flex items-start gap-2 mb-2">
                                       <Search className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1">
@@ -748,7 +748,7 @@ export default function AIEnablementTracker() {
                                           
                                           {/* Subtask Search Results */}
                                           {expandedSearches.has(subtaskKey) && searchResults.has(subtaskKey) && (
-                                            <div className="ml-4 mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-hidden">
+                                            <div className="ml-0 md:ml-4 mt-3 md:mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg animate-fade-in w-full max-w-full overflow-x-auto overflow-y-auto max-h-[60vh] md:max-h-none">
                                               <div className="flex items-start gap-2">
                                                 <Search className="w-3 h-3 text-purple-600 mt-0.5 flex-shrink-0" />
                                                 <div className="flex-1">
