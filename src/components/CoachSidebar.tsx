@@ -9,6 +9,7 @@ type Props = {
   onClose: () => void;
   messages: CoachMessageType[];
   onSend: (message: string) => Promise<void>;
+  onClear: () => Promise<void> | void;
   sending: boolean;
   snapshot: {
     currentWeek: number;
@@ -26,7 +27,7 @@ const QUICK_TEMPLATES = [
   "It's the start of the week. Plan my week with 3–5 tasks.",
 ];
 
-export default function CoachSidebar({ isOpen, onClose, messages, onSend, sending, snapshot }: Props) {
+export default function CoachSidebar({ isOpen, onClose, messages, onSend, onClear, sending, snapshot }: Props) {
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -67,6 +68,14 @@ export default function CoachSidebar({ isOpen, onClose, messages, onSend, sendin
 
       <div className="px-4 pt-3">
         <ProgressSnapshot {...snapshot} weeklyPlanMinutes={lastWeeklyPlanMinutes} />
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={() => onClear()}
+            className="text-xs px-3 py-2 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100"
+          >
+            Clear chat
+          </button>
+        </div>
       </div>
 
       <div className="px-4">

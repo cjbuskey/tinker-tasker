@@ -12,7 +12,8 @@ function renderOperation(op: AgentOperation, idx: number) {
   if (op.type === 'reschedule') {
     return <li key={idx}>Move {op.taskId} → Week {op.newWeek}</li>;
   }
-  return <li key={idx}>Add task to Week {op.week}: {op.task.text}</li>;
+  const text = op.task?.text || 'New task';
+  return <li key={idx}>Add task to Week {op.week}: {text}</li>;
 }
 
 export default function CoachMessage({ message }: Props) {
@@ -27,11 +28,11 @@ export default function CoachMessage({ message }: Props) {
       >
         <div className="text-sm whitespace-pre-line leading-relaxed">{message.content}</div>
 
-        {message.weeklyPlan && (
+        {message.weeklyPlan && message.weeklyPlan.tasks && (
           <div className="mt-3 text-xs bg-indigo-50 text-indigo-900 border border-indigo-100 rounded-lg p-3">
             <div className="font-semibold mb-1">Weekly plan (Week {message.weeklyPlan.week})</div>
             <ul className="list-disc ml-4 space-y-0.5">
-              {message.weeklyPlan.tasks.map((t, i) => (
+              {(message.weeklyPlan.tasks || []).map((t, i) => (
                 <li key={i}>{t}</li>
               ))}
             </ul>

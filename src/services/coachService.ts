@@ -1,5 +1,5 @@
 import { httpsCallable, getFunctions } from 'firebase/functions';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import app, { db } from '../firebase';
 import { AgentOperation, AgentResponse, CoachMessage } from '../types/coach';
 
@@ -16,6 +16,10 @@ export async function loadConversation(userId = 'default'): Promise<CoachMessage
   if (!snap.exists()) return [];
   const data = snap.data() as { messages?: CoachMessage[] };
   return data.messages || [];
+}
+
+export async function clearConversation(userId = 'default'): Promise<void> {
+  await deleteDoc(doc(db, 'coachConversations', userId));
 }
 
 type Curriculum = {

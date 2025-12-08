@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CoachSidebar from './components/CoachSidebar';
 import { CoachMessage } from './types/coach';
-import { sendCoachMessage, loadConversation, applyOperationsLocally, persistProgress, persistCurriculum } from './services/coachService';
+import { sendCoachMessage, loadConversation, applyOperationsLocally, persistProgress, persistCurriculum, clearConversation } from './services/coachService';
 import { getCurrentWeek } from './utils/weekCalculator';
 
 type Task = {
@@ -187,16 +187,16 @@ export default function AIEnablementTracker() {
   }, []);
 
   useEffect(() => {
-    const loadCoach = async () => {
+    const resetCoach = async () => {
       try {
-        const messages = await loadConversation();
-        setCoachMessages(messages);
+        await clearConversation();
       } catch (err) {
-        console.error('Failed to load coach conversation:', err);
+        console.error('Failed to clear coach conversation:', err);
       }
+      setCoachMessages([]);
     };
 
-    loadCoach();
+    resetCoach();
   }, []);
 
   const toggleTask = async (taskId: string) => {
@@ -408,6 +408,15 @@ export default function AIEnablementTracker() {
       }
       return phase;
     }));
+  };
+
+  const handleClearCoach = async () => {
+    try {
+      await clearConversation();
+    } catch (err) {
+      console.error('Failed to clear coach conversation:', err);
+    }
+    setCoachMessages([]);
   };
 
   const handleCoachSend = async (message: string) => {
@@ -1095,6 +1104,7 @@ export default function AIEnablementTracker() {
       messages={coachMessages}
       onSend={handleCoachSend}
       sending={sendingCoach}
+      onClear={handleClearCoach}
       snapshot={{
         currentWeek,
         totalWeeks,
