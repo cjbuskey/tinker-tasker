@@ -40,6 +40,7 @@ const anthropic_1 = require("./anthropic");
 if (!admin.apps.length) {
     admin.initializeApp();
 }
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620';
 const db = admin.firestore();
 async function fetchCurriculum() {
     const snap = await db.doc('curriculum/main').get();
@@ -115,7 +116,7 @@ async function runCoachAgent(userId, userMessage) {
     const prompt = buildSystemPrompt(curriculum, progress);
     const convo = trimHistory(history);
     const response = await anthropic_1.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: ANTHROPIC_MODEL,
         max_tokens: 800,
         temperature: 0.3,
         system: prompt.map((p) => p.content).join('\n\n'),
