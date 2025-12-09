@@ -8,7 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CoachSidebar from './components/CoachSidebar';
 import { CoachMessage } from './types/coach';
-import { sendCoachMessage, loadConversation, applyOperationsLocally, persistProgress, persistCurriculum, clearConversation } from './services/coachService';
+import { sendCoachMessage, loadConversation, applyOperationsLocally, persistProgress, persistCurriculum, clearConversation, normalizeCoachMessage } from './services/coachService';
 import { getCurrentWeek } from './utils/weekCalculator';
 
 type Task = {
@@ -517,7 +517,7 @@ export default function AIEnablementTracker() {
 
   const handleCoachSend = async (message: string) => {
     const timestamp = Date.now();
-    setCoachMessages(prev => [...prev, { role: 'user', content: message, createdAt: timestamp }]);
+    setCoachMessages(prev => [...prev, normalizeCoachMessage({ role: 'user', content: message, createdAt: timestamp })]);
     setSendingCoach(true);
 
     try {
@@ -525,7 +525,7 @@ export default function AIEnablementTracker() {
       console.log('Coach response:', response);
       console.log('Operations to apply:', response.operations);
       
-      setCoachMessages(prev => [...prev, { role: 'assistant', content: response.message, createdAt: Date.now(), operations: response.operations, weeklyPlan: response.weeklyPlan }]);
+      setCoachMessages(prev => [...prev, normalizeCoachMessage({ role: 'assistant', content: response.message, createdAt: Date.now(), operations: response.operations, weeklyPlan: response.weeklyPlan })]);
 
       const { curriculum: updatedCurriculumObj, taskProgress: updatedTaskProgress } = applyOperationsLocally(
         response.operations || [],
@@ -556,7 +556,7 @@ export default function AIEnablementTracker() {
       await persistCurriculum(updatedCurriculumObj);
     } catch (err) {
       console.error('Coach send failed:', err);
-      setCoachMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not update the plan. Please try again.', createdAt: Date.now() }]);
+      setCoachMessages(prev => [...prev, normalizeCoachMessage({ role: 'assistant', content: 'Sorry, I could not update the plan. Please try again.', createdAt: Date.now() })]);
     } finally {
       setSendingCoach(false);
     }

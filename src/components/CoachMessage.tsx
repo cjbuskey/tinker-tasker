@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AgentOperation, CoachMessage as CoachMessageType } from '../types/coach';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { normalizeCoachMessageContent } from '../services/coachService';
 
 type Props = {
   message: CoachMessageType;
@@ -28,6 +29,7 @@ function renderOperation(op: AgentOperation, idx: number) {
 export default function CoachMessage({ message, isLast, onConfirm, onReject }: Props) {
   const isUser = message.role === 'user';
   const isProposal = !isUser && message.weeklyPlan && (!message.operations || message.operations.length === 0);
+  const displayContent = normalizeCoachMessageContent(message.content);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
@@ -37,7 +39,7 @@ export default function CoachMessage({ message, isLast, onConfirm, onReject }: P
         }`}
       >
         {isUser ? (
-          <div className="text-sm whitespace-pre-line leading-relaxed">{message.content}</div>
+          <div className="text-sm whitespace-pre-line leading-relaxed">{displayContent}</div>
         ) : (
           <div className="text-sm leading-relaxed prose prose-sm max-w-none
             prose-headings:text-slate-800 prose-headings:font-semibold prose-headings:mb-2
@@ -47,7 +49,7 @@ export default function CoachMessage({ message, isLast, onConfirm, onReject }: P
             prose-ol:list-decimal prose-ol:ml-4 prose-ol:mb-2 prose-ol:space-y-1
             prose-li:text-slate-700 prose-li:text-sm prose-li:leading-relaxed">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
+              {displayContent}
             </ReactMarkdown>
           </div>
         )}

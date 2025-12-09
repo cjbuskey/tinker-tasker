@@ -198,6 +198,68 @@ function trimHistory(history: CoachMessage[]): CoachMessage[] {
   return last;
 }
 
+// Check if user message is an affirmative response (confirming a suggestion)
+function isAffirmative(message: string): boolean {
+  return /\b(yes|sure|do it|add them|add it|add these|please add|ok|okay|sounds good|go ahead|confirm|yep|yeah)\b/i.test(
+    message || '',
+  );
+}
+
+// Derive operations from a weeklyPlan when model forgets to include them
+function deriveOperationsFromPlan(plan?: WeeklyPlan): AgentOperation[] {
+  if (!plan || !plan.tasks || !Array.isArray(plan.tasks)) {
+    return [];
+  }
+  const estimatedPerTask = plan.estimatedMinutes 
+    ? Math.floor(plan.estimatedMinutes / plan.tasks.length)
+    : 60;
+  return plan.tasks.map((text) => ({
+    type: 'add_task' as const,
+    week: plan.week,
+    task: { 
+      text,
+      estimatedMinutes: estimatedPerTask,
+    },
+  }));
+}
+
+// Extract tasks from message text when weeklyPlan is missing
+function extractTasksFromMessage(message: string, defaultWeek = 1): WeeklyPlan | null {
+  // Look for bullet points with task descriptions
+  // Matches patterns like: "- **Task name** (1 hr)" or "- Task name (90 min)" or "- **Task**: description"
+  const taskPattern = /[-•]\s*\*?\*?([^*\n(]+?)(?:\*?\*?)(?:\s*\(([^)]+)\)|\s*:|\s*$)/gm;
+  const tasks: string[] = [];
+  let totalMinutes = 0;
+  
+  let match;
+  while ((match = taskPattern.exec(message)) !== null) {
+    const taskText = match[1].trim();
+    const timeStr = (match[2] || '').toLowerCase();
+    
+    if (taskText.length > 5 && !taskText.toLowerCase().includes('shall i')) { // Avoid false positives
+      tasks.push(taskText);
+      
+      // Parse time estimate if available
+      if (timeStr.includes('hr') || timeStr.includes('hour')) {
+        const hrs = parseFloat(timeStr) || 1;
+        totalMinutes += hrs * 60;
+      } else if (timeStr.includes('min')) {
+        totalMinutes += parseInt(timeStr) || 60;
+      } else {
+        totalMinutes += 60; // Default 1 hour
+      }
+    }
+  }
+  
+  if (tasks.length === 0) return null;
+  
+  return {
+    week: defaultWeek,
+    tasks,
+    estimatedMinutes: totalMinutes || tasks.length * 60,
+  };
+}
+
 export async function runCoachAgent(userId: string, userMessage: string): Promise<AgentResponse> {
   const [curriculum, progress, history] = await Promise.all([
     fetchCurriculum(),
@@ -238,13 +300,23 @@ export async function runCoachAgent(userId: string, userMessage: string): Promis
 
   if (content.type === 'text') {
     try {
-      parsed = JSON.parse(content.text) as AgentResponse;
+      const rawParsed = JSON.parse(content.text) as AgentResponse;
+      parsed = {
+        message: rawParsed.message || 'No response',
+        operations: rawParsed.operations || [],
+        weeklyPlan: rawParsed.weeklyPlan,
+      };
     } catch (err) {
       // Try to salvage JSON embedded in text
       const maybeJson = content.text?.match(/\{[\s\S]*\}/);
       if (maybeJson) {
         try {
-          parsed = JSON.parse(maybeJson[0]) as AgentResponse;
+          const rawParsed = JSON.parse(maybeJson[0]) as AgentResponse;
+          parsed = {
+            message: rawParsed.message || 'No response',
+            operations: rawParsed.operations || [],
+            weeklyPlan: rawParsed.weeklyPlan,
+          };
         } catch {
           parsed = {
             message: content.text || 'Coach could not parse a response.',
@@ -257,6 +329,42 @@ export async function runCoachAgent(userId: string, userMessage: string): Promis
           operations: [],
         };
       }
+    }
+  }
+
+  // Ensure message is never undefined (Firestore doesn't allow undefined values)
+  if (!parsed.message) {
+    parsed.message = 'No response';
+  }
+
+  // FALLBACK: If model didn't return weeklyPlan, try to extract tasks from message text
+  if (!parsed.weeklyPlan && parsed.message) {
+    const extractedPlan = extractTasksFromMessage(parsed.message, 1);
+    if (extractedPlan) {
+      parsed.weeklyPlan = extractedPlan;
+    }
+  }
+
+  // FALLBACK: If user confirmed but model forgot to include operations,
+  // derive them from the weeklyPlan in this response or previous messages
+  const userConfirmed = isAffirmative(userMessage);
+  if (userConfirmed && (!parsed.operations || parsed.operations.length === 0)) {
+    // Look for weeklyPlan in current response or in recent history
+    let lastAssistantPlan =
+      parsed.weeklyPlan ||
+      [...history].reverse().find((m) => m.role === 'assistant' && m.weeklyPlan)?.weeklyPlan;
+    
+    // LAST RESORT: If no weeklyPlan found, try to extract tasks from the previous message text
+    if (!lastAssistantPlan) {
+      const lastAssistantMsg = [...history].reverse().find((m) => m.role === 'assistant');
+      if (lastAssistantMsg?.content) {
+        lastAssistantPlan = extractTasksFromMessage(lastAssistantMsg.content, 1) ?? undefined;
+      }
+    }
+    
+    const derived = deriveOperationsFromPlan(lastAssistantPlan);
+    if (derived.length > 0) {
+      parsed = { ...parsed, operations: derived, weeklyPlan: undefined };
     }
   }
 
